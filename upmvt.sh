@@ -11,7 +11,7 @@ if [ "$(echo -E "$up1" | egrep '^# ##' | sed -n '$p')" = '# ##' -a "$(echo -E "$
 	module_versionCode="$(cat "$MODDIR/module.prop" | egrep 'versionCode=' | sed -n 's/.*versionCode=//g;$p')"
 	if [ -n "$Host_version" -a "$Host_version" -lt "$module_versionCode" ]; then
 	sed -i "s/version=.*/version=${module_version}(有更新)/g" "$MODDIR/module.prop" >/dev/null 2>&1
-	sed -i "s/。 .*/。 \[ 发现新版本，请到酷安或github.com搜作者动态下载更新 \]/g" "$MODDIR/module.prop" > /dev/null 2>&1
+	sed -i "s/。 .*/。 \( 发现新版本，请到酷安或github.com搜作者动态下载更新 \)/g" "$MODDIR/module.prop" > /dev/null 2>&1
 	fi
 	chmod 0755 "$MODDIR/mvt.sh"
 	chmod 0644 "$MODDIR/module.prop"
