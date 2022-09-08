@@ -1,0 +1,7 @@
+id=MiuiVariableThermal
+name=MIUI动态温控
+version=20220908
+versionCode=2022090800
+author=top大佬(酷安)
+description=[ 当前温控：未知 ] 利用MIUI云控，使得不同场景使用不同的温控策略或是关闭温控，比如充电或游戏场景关闭温控实现快充和性能的不限制，其它场景自动恢复默认温控，配置路径：/data/adb/modules/MiuiVariableThermal/config.conf。 
+# ##

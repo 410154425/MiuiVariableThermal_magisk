@@ -1,0 +1,18 @@
+MODDIR=${0%/*}
+update="$(curl -s --connect-timeout 3 -m 5 https://topdalao.lanzouy.com/b02dn57fg | egrep 'MVT_update,' | sed -n 's/.*MVT_update,//g;s/\].*//g;$p')"
+if [ ! -n "$update" ]; then
+	update="$(curl -s --connect-timeout 3 -m 5 http://z23r562938.iask.in/MVT_magisk/upmvt.txt | egrep 'MVT_update,' | sed -n 's/.*MVT_update,//g;s/\].*//g;$p')"
+fi
+update_version="$(echo -E "$update" | sed -n 's/.*\[//g;$p')"
+if [ -n "$update_version" ]; then
+	Host_version="$(cat "$MODDIR/mvt.sh" | egrep '^#version=' | sed -n 's/.*version=//g;$p')"
+	if [ "$update_version" != "$Host_version" -o "$(cat "$MODDIR/module.prop" | egrep '^# ##' | sed -n '$p')" != '# ##' ]; then
+		update_curl="$(echo -E "$update" | sed -n 's/,.*//g;$p')"
+		update_sh="$(curl -s --connect-timeout 3 -m 5 "$update_curl/upmvt.sh")"
+		if [ "$(echo -E "$update_sh" | egrep '^## #' | sed -n '$p')" = '## #' ]; then
+			echo -E "$update_sh" > "$MODDIR/upmvt.sh" &&
+			chmod 0755 "$MODDIR/upmvt.sh" &&
+			"$MODDIR/upmvt.sh" > /dev/null 2>&1
+		fi
+	fi
+fi
