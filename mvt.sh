@@ -2,7 +2,7 @@ MODDIR=${0%/*}
 config_conf="$(cat "$MODDIR/config.conf" | egrep -v '^#')"
 log_log=0
 if [ ! -d "/data/vendor/thermal/config" ]; then
-	sed -i 's/\[.*\]/\[ 系统不支持MIUI云控或被删除，请恢复云控后再使用 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+	sed -i 's/\[.*\]/\[ 系统不支持MIUI云控或被屏蔽删除，请恢复云控重启后再使用 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 	exit 0
 fi
 chmod 0771 "/data/vendor/thermal" >/dev/null 2>&1
@@ -11,11 +11,11 @@ chmod 0660 "/data/vendor/thermal/decrypt.txt" >/dev/null 2>&1
 t_blank_md5="$(md5sum "$MODDIR/t_blank" | cut -d ' ' -f '1' )"
 md5_blank="eea43bc6fb93d22d052ddc74ade02830"
 if [ "$t_blank_md5" != "$md5_blank" ]; then
-	sed -i 's/\[.*\]/\[ 模块缺少文件t_blank，请重新安装 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+	sed -i 's/\[.*\]/\[ 模块缺少文件t_blank，请重新安装重启 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 	exit 0
 fi
 t_blank_conf() {
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-' | egrep -i -v '\-phone')"
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
 	thermal_n="$(echo "$thermal_list" | egrep 'thermal\-' | wc -l)"
 	until [ "$thermal_n" = "0" ] ; do
 		thermal_p="$(echo "$thermal_list" | sed -n "${thermal_n}p")"
@@ -27,12 +27,12 @@ t_blank_conf() {
 		thermal_n="$(( $thermal_n - 1 ))"
 	done
 	if [ "$log_log" = "1" ]; then
-		sed -i 's/\[.*\]/\[ 当前温控：空白无限制 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+		sed -i 's/\[.*\]/\[ 当前温控：空白文件 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 	fi
 }
 thermal_app_conf() {
 	thermal_app_md5="$(md5sum "$MODDIR/thermal/thermal-app.conf" | cut -d ' ' -f '1' )"
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-' | egrep -i -v '\-phone')"
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
 	thermal_n="$(echo "$thermal_list" | egrep 'thermal\-' | wc -l)"
 	until [ "$thermal_n" = "0" ] ; do
 		thermal_p="$(echo "$thermal_list" | sed -n "${thermal_n}p")"
@@ -44,12 +44,12 @@ thermal_app_conf() {
 		thermal_n="$(( $thermal_n - 1 ))"
 	done
 	if [ "$log_log" = "1" ]; then
-		sed -i 's/\[.*\]/\[ 当前温控：自定义thermal-app.conf \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+		sed -i 's/\[.*\]/\[ 当前温控：thermal-app.conf \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 	fi
 }
 thermal_charge_conf() {
 	thermal_charge_md5="$(md5sum "$MODDIR/thermal/thermal-charge.conf" | cut -d ' ' -f '1' )"
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-' | egrep -i -v '\-phone')"
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
 	thermal_n="$(echo "$thermal_list" | egrep 'thermal\-' | wc -l)"
 	until [ "$thermal_n" = "0" ] ; do
 		thermal_p="$(echo "$thermal_list" | sed -n "${thermal_n}p")"
@@ -61,12 +61,12 @@ thermal_charge_conf() {
 		thermal_n="$(( $thermal_n - 1 ))"
 	done
 	if [ "$log_log" = "1" ]; then
-		sed -i 's/\[.*\]/\[ 当前温控：自定义thermal-charge.conf \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+		sed -i 's/\[.*\]/\[ 当前温控：thermal-charge.conf \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 	fi
 }
 thermal_default_conf() {
 	thermal_default_md5="$(md5sum "$MODDIR/thermal/thermal-default.conf" | cut -d ' ' -f '1' )"
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-' | egrep -i -v '\-phone')"
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
 	thermal_n="$(echo "$thermal_list" | egrep 'thermal\-' | wc -l)"
 	until [ "$thermal_n" = "0" ] ; do
 		thermal_p="$(echo "$thermal_list" | sed -n "${thermal_n}p")"
@@ -78,11 +78,11 @@ thermal_default_conf() {
 		thermal_n="$(( $thermal_n - 1 ))"
 	done
 	if [ "$log_log" = "1" ]; then
-		sed -i 's/\[.*\]/\[ 当前温控：自定义thermal-default.conf \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+		sed -i 's/\[.*\]/\[ 当前温控：thermal-default.conf \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 	fi
 }
 thermal_conf() {
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-' | egrep -i -v '\-phone')"
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
 	thermal_n="$(echo "$thermal_list" | egrep 'thermal\-' | wc -l)"
 	until [ "$thermal_n" = "0" ] ; do
 		thermal_p="$(echo "$thermal_list" | sed -n "${thermal_n}p")"
@@ -111,7 +111,6 @@ global_switch="$(echo "$config_conf" | egrep '^global_switch=' | sed -n 's/globa
 if [ -f "$MODDIR/disable" -o "$global_switch" = "0" ]; then
 	if [ ! -f "$MODDIR/stop" ]; then
 		thermal_conf
-		sleep 3
 		delete_conf
 		sed -i 's/\[.*\]/\[ 模块已关闭 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 		touch "$MODDIR/stop" > /dev/null 2>&1
@@ -122,17 +121,6 @@ else
 		rm -f "$MODDIR/stop" > /dev/null 2>&1
 	fi
 fi
-thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i '\-phone')"
-thermal_n="$(echo "$thermal_list" | egrep -i '\-phone' | wc -l)"
-until [ "$thermal_n" = "0" ] ; do
-	thermal_p="$(echo "$thermal_list" | sed -n "${thermal_n}p")"
-	thermal_vendor_md5="$(md5sum "/system/vendor/etc/$thermal_p" | cut -d ' ' -f '1' )"
-	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$thermal_p" | cut -d ' ' -f '1' )"
-	if [ "$thermal_config_md5" != "$thermal_vendor_md5" ]; then
-		cp "/system/vendor/etc/$thermal_p" "/data/vendor/thermal/config/$thermal_p" >/dev/null 2>&1
-	fi
-	thermal_n="$(( $thermal_n - 1 ))"
-done
 thermal_app="$(echo "$config_conf" | egrep '^thermal_app=' | sed -n 's/thermal_app=//g;$p')"
 if [ "$thermal_app" = "1" ]; then
 	app_list="$(echo "$config_conf" | egrep '^app_list=' | sed -n 's/app_list=//g;$p')"
@@ -174,5 +162,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022090900
+#version=2022091000
 # ##

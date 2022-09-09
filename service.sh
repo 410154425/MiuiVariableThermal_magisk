@@ -20,8 +20,8 @@ done
 sleep 5
 find /system/vendor/etc -name "thermal-*.conf" | egrep -i -v '\-map' | sed -n 's/\/system\/vendor\/etc\///g;p' > "$MODDIR/thermal_list"
 sleep 1
-thermal_normal="$(cat "$MODDIR/thermal_list" | egrep -i '\-normal')"
-thermal_normal_n="$(echo "$thermal_normal" | egrep -i '\-normal' | wc -l)"
+thermal_normal="$(cat "$MODDIR/thermal_list")"
+thermal_normal_n="$(echo "$thermal_normal" | wc -l)"
 if [ "$thermal_normal_n" = "0" ]; then
 	sed -i 's/\[.*\]/\[ 系统温控被删除，请恢复系统温控重启后再使用 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 	exit 0
@@ -36,7 +36,7 @@ until [ "$thermal_normal_n" = "0" ] ; do
 	thermal_normal_n="$(( $thermal_normal_n - 1 ))"
 done
 if [ ! -d "/data/vendor/thermal/config" ]; then
-	sed -i 's/\[.*\]/\[ 系统不支持MIUI云控或被删除，请恢复云控重启后再使用 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+	sed -i 's/\[.*\]/\[ 系统不支持MIUI云控或被屏蔽删除，请恢复云控重启后再使用 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 	exit 0
 fi
 chmod 0771 "/data/vendor/thermal" >/dev/null 2>&1
