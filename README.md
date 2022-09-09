@@ -1,5 +1,5 @@
-# AdGuardHome_magisk
-这是一个让AdGuardHome运行在安卓设备上的去广告magisk模块。
+# MiuiVariableThermal_magisk
+这是一个运行在安卓设备上的magisk模块。
 
 [下载页面](https://github.com/410154425/MiuiVariableThermal_magisk/releases)点击Assets选择压缩包MiuiVariableThermal_magisk_***.zip，使用Magisk从本地安装。
 
