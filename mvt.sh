@@ -25,6 +25,10 @@ if [ "$t_blank_md5" != "$md5_blank" ]; then
 	sed -i 's/\[.*\]/\[ 模块缺少文件t_blank，请重新安装重启 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 	exit 0
 fi
+log_n="$(cat "$MODDIR/log.log" | wc -l)"
+if [ "$log_n" -gt "20" ]; then
+	sed -i '1,5d' "$MODDIR/log.log" > /dev/null 2>&1
+fi
 start_thermal_program() {
 	stop mi_thermald >/dev/null 2>&1
 	stop thermal-engine >/dev/null 2>&1
@@ -65,12 +69,14 @@ t_blank_conf() {
 			stop_thermal_program
 			echo "5" > "$MODDIR/mode"
 			sed -i 's/\[.*\]/\[ 当前温控：极限模式 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+			echo "$(date +%F_%T) 当前温控：极限模式" >> "$MODDIR/log.log"
 		fi
 	else
 		if [ "$log_log" = "1" -o "$mode" != "4" ]; then
 			start_thermal_program
 			echo "4" > "$MODDIR/mode"
 			sed -i 's/\[.*\]/\[ 当前温控：空白文件 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+			echo "$(date +%F_%T) 当前温控：空白文件" >> "$MODDIR/log.log"
 		fi
 	fi
 }
@@ -91,6 +97,7 @@ thermal_app_conf() {
 		start_thermal_program
 		echo "3" > "$MODDIR/mode"
 		sed -i 's/\[.*\]/\[ 当前温控：thermal-app.conf \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+		echo "$(date +%F_%T) 当前温控：thermal-app.conf" >> "$MODDIR/log.log"
 	fi
 }
 thermal_charge_conf() {
@@ -110,6 +117,7 @@ thermal_charge_conf() {
 		start_thermal_program
 		echo "2" > "$MODDIR/mode"
 		sed -i 's/\[.*\]/\[ 当前温控：thermal-charge.conf \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+		echo "$(date +%F_%T) 当前温控：thermal-charge.conf" >> "$MODDIR/log.log"
 	fi
 }
 thermal_default_conf() {
@@ -129,6 +137,7 @@ thermal_default_conf() {
 		start_thermal_program
 		echo "1" > "$MODDIR/mode"
 		sed -i 's/\[.*\]/\[ 当前温控：thermal-default.conf \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+		echo "$(date +%F_%T) 当前温控：thermal-default.conf" >> "$MODDIR/log.log"
 	fi
 }
 thermal_conf() {
@@ -148,6 +157,7 @@ thermal_conf() {
 		start_thermal_program
 		echo "0" > "$MODDIR/mode"
 		sed -i 's/\[.*\]/\[ 当前温控：系统默认 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+		echo "$(date +%F_%T) 当前温控：系统默认" >> "$MODDIR/log.log"
 	fi
 }
 delete_conf() {
@@ -165,6 +175,7 @@ if [ -f "$MODDIR/disable" -o "$global_switch" = "0" ]; then
 		thermal_conf
 		delete_conf
 		sed -i 's/\[.*\]/\[ 模块已关闭 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+		echo "$(date +%F_%T) 模块已关闭" >> "$MODDIR/log.log"
 		touch "$MODDIR/stop" > /dev/null 2>&1
 	fi
 	exit 0
@@ -180,8 +191,8 @@ fi
 thermal_app="$(echo "$config_conf" | egrep '^thermal_app=' | sed -n 's/thermal_app=//g;$p')"
 if [ "$thermal_app" = "1" ]; then
 	app_list="$(echo "$config_conf" | egrep '^app_list=' | sed -n 's/app_list=//g;$p')"
-	activity_mResume="$(dumpsys activity | egrep 'mResume' | egrep "$app_list")"
-	if [ -n "$app_list" -a -n "$activity_mResume" ]; then
+	activity_window="$(dumpsys window | egrep 'mCurrentFocus' | egrep "$app_list")"
+	if [ -n "$app_list" -a -n "$activity_window" ]; then
 		thermal_app_c="$(cat "$MODDIR/thermal/thermal-app.conf" | wc -c)"
 		if [ "$thermal_app_c" -lt "20" ]; then
 			t_blank_conf
@@ -218,5 +229,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022091100
+#version=2022091200
 # ##

@@ -18,7 +18,7 @@ until [ -d "/system" ] ; do
   sleep 5
 done
 sleep 5
-find /system/vendor/etc -name "thermal-*.conf" | egrep -i -v '\-map' | sed -n 's/\/system\/vendor\/etc\///g;p' > "$MODDIR/thermal_list"
+find /system/vendor/etc -name "thermal-*.conf" | egrep -i -v '\-map' | sed -n 's/\/system\/vendor\/etc\///g;p' | egrep -v '\/' > "$MODDIR/thermal_list"
 sleep 1
 thermal_normal="$(cat "$MODDIR/thermal_list")"
 thermal_normal_n="$(echo "$thermal_normal" | wc -l)"

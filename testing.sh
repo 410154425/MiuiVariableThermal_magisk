@@ -18,6 +18,8 @@ getprop vendor.sys.thermal.data.path
 pgrep 'mi_thermald'
 getprop sys.thermal.data.path
 pgrep 'thermal-engine'
+dumpsys activity | egrep 'mResume'
+dumpsys window | egrep 'mCurrentFocus'
 if [ -f "/data/vendor/thermal/decrypt.txt" ]; then
 	decrypt_l="$(cat "/data/vendor/thermal/decrypt.txt" | wc -l)"
 	echo "yes decrypt.txt $decrypt_l"
