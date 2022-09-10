@@ -14,6 +14,10 @@ echo --------- 版本 ----------
 echo "$module_version ,$module_versionCode"
 echo --------- 状态 ----------
 echo "$state"
+getprop vendor.sys.thermal.data.path
+pgrep 'mi_thermald'
+getprop sys.thermal.data.path
+pgrep 'thermal-engine'
 if [ -f "/data/vendor/thermal/decrypt.txt" ]; then
 	decrypt_l="$(cat "/data/vendor/thermal/decrypt.txt" | wc -l)"
 	echo "yes decrypt.txt $decrypt_l"

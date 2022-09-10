@@ -1,9 +1,20 @@
 MODDIR=${0%/*}
 config_conf="$(cat "$MODDIR/config.conf" | egrep -v '^#')"
+mode="$(cat "$MODDIR/mode")"
+thermal_unlimited="$(echo "$config_conf" | egrep '^thermal_unlimited=' | sed -n 's/thermal_unlimited=//g;$p')"
 log_log=0
-if [ ! -d "/data/vendor/thermal/config" ]; then
-	sed -i 's/\[.*\]/\[ 系统不支持MIUI云控或被屏蔽删除，请恢复云控重启后再使用 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+data_vendor_thermal="$(getprop vendor.sys.thermal.data.path)"
+thermal_program='mi_thermald'
+if [ ! -n "$data_vendor_thermal" ]; then
+	data_vendor_thermal="$(getprop sys.thermal.data.path)"
+	thermal_program='thermal-engine'
+fi
+if [ ! -n "$data_vendor_thermal" ]; then
+	sed -i 's/\[.*\]/\[ 系统不支持MIUI云温控或被屏蔽删除，请使用支持MIUI云温控的设备及系统 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 	exit 0
+fi
+if [ ! -d "/data/vendor/thermal/config" ]; then
+	mkdir -p "/data/vendor/thermal/config" >/dev/null 2>&1
 fi
 chmod 0771 "/data/vendor/thermal" >/dev/null 2>&1
 chmod 0771 "/data/vendor/thermal/config" >/dev/null 2>&1
@@ -14,6 +25,29 @@ if [ "$t_blank_md5" != "$md5_blank" ]; then
 	sed -i 's/\[.*\]/\[ 模块缺少文件t_blank，请重新安装重启 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 	exit 0
 fi
+start_thermal_program() {
+	stop mi_thermald >/dev/null 2>&1
+	stop thermal-engine >/dev/null 2>&1
+	start mi_thermald >/dev/null 2>&1
+	start thermal-engine >/dev/null 2>&1
+	if [ -f "$MODDIR/thermal_stop" ]; then
+		rm -f "$MODDIR/thermal_stop" > /dev/null 2>&1
+	fi
+	thermal_program_id="$(pgrep "$thermal_program")"
+	if [ ! -n "$thermal_program_id" ]; then
+		sed -i "s/\[.*\]/\[ 系统温控程序$thermal_program被屏蔽删除，请恢复重启后再使用 \]/g" "$MODDIR/module.prop" >/dev/null 2>&1
+		exit 0
+	fi
+}
+stop_thermal_program() {
+	stop mi_thermald >/dev/null 2>&1
+	stop thermal-engine >/dev/null 2>&1
+	start mi_thermald >/dev/null 2>&1
+	start thermal-engine >/dev/null 2>&1
+	stop mi_thermald >/dev/null 2>&1
+	stop thermal-engine >/dev/null 2>&1
+	touch "$MODDIR/thermal_stop" > /dev/null 2>&1
+}
 t_blank_conf() {
 	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
 	thermal_n="$(echo "$thermal_list" | egrep 'thermal\-' | wc -l)"
@@ -26,8 +60,18 @@ t_blank_conf() {
 		fi
 		thermal_n="$(( $thermal_n - 1 ))"
 	done
-	if [ "$log_log" = "1" ]; then
-		sed -i 's/\[.*\]/\[ 当前温控：空白文件 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+	if [ "$thermal_unlimited" = "1" ]; then
+		if [ "$log_log" = "1" -o "$mode" != "5" ]; then
+			stop_thermal_program
+			echo "5" > "$MODDIR/mode"
+			sed -i 's/\[.*\]/\[ 当前温控：极限模式 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+		fi
+	else
+		if [ "$log_log" = "1" -o "$mode" != "4" ]; then
+			start_thermal_program
+			echo "4" > "$MODDIR/mode"
+			sed -i 's/\[.*\]/\[ 当前温控：空白文件 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+		fi
 	fi
 }
 thermal_app_conf() {
@@ -43,7 +87,9 @@ thermal_app_conf() {
 		fi
 		thermal_n="$(( $thermal_n - 1 ))"
 	done
-	if [ "$log_log" = "1" ]; then
+	if [ "$log_log" = "1" -o "$mode" != "3" ]; then
+		start_thermal_program
+		echo "3" > "$MODDIR/mode"
 		sed -i 's/\[.*\]/\[ 当前温控：thermal-app.conf \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 	fi
 }
@@ -60,7 +106,9 @@ thermal_charge_conf() {
 		fi
 		thermal_n="$(( $thermal_n - 1 ))"
 	done
-	if [ "$log_log" = "1" ]; then
+	if [ "$log_log" = "1" -o "$mode" != "2" ]; then
+		start_thermal_program
+		echo "2" > "$MODDIR/mode"
 		sed -i 's/\[.*\]/\[ 当前温控：thermal-charge.conf \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 	fi
 }
@@ -77,7 +125,9 @@ thermal_default_conf() {
 		fi
 		thermal_n="$(( $thermal_n - 1 ))"
 	done
-	if [ "$log_log" = "1" ]; then
+	if [ "$log_log" = "1" -o "$mode" != "1" ]; then
+		start_thermal_program
+		echo "1" > "$MODDIR/mode"
 		sed -i 's/\[.*\]/\[ 当前温控：thermal-default.conf \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 	fi
 }
@@ -94,7 +144,9 @@ thermal_conf() {
 		fi
 		thermal_n="$(( $thermal_n - 1 ))"
 	done
-	if [ "$log_log" = "1" ]; then
+	if [ "$log_log" = "1" -o "$mode" != "0" ]; then
+		start_thermal_program
+		echo "0" > "$MODDIR/mode"
 		sed -i 's/\[.*\]/\[ 当前温控：系统默认 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 	fi
 }
@@ -120,6 +172,10 @@ else
 	if [ -f "$MODDIR/stop" ]; then
 		rm -f "$MODDIR/stop" > /dev/null 2>&1
 	fi
+fi
+thermal_program_id="$(pgrep 'mi_thermald|thermal-engine')"
+if [ -f "$MODDIR/thermal_stop" -a -n "$thermal_program_id" ]; then
+	stop_thermal_program
 fi
 thermal_app="$(echo "$config_conf" | egrep '^thermal_app=' | sed -n 's/thermal_app=//g;$p')"
 if [ "$thermal_app" = "1" ]; then
@@ -162,5 +218,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022091000
+#version=2022091100
 # ##

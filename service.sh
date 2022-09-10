@@ -35,9 +35,22 @@ until [ "$thermal_normal_n" = "0" ] ; do
 	fi
 	thermal_normal_n="$(( $thermal_normal_n - 1 ))"
 done
-if [ ! -d "/data/vendor/thermal/config" ]; then
-	sed -i 's/\[.*\]/\[ 系统不支持MIUI云控或被屏蔽删除，请恢复云控重启后再使用 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+data_vendor_thermal="$(getprop vendor.sys.thermal.data.path)"
+thermal_program='mi_thermald'
+if [ ! -n "$data_vendor_thermal" ]; then
+	data_vendor_thermal="$(getprop sys.thermal.data.path)"
+	thermal_program='thermal-engine'
+fi
+if [ ! -n "$data_vendor_thermal" ]; then
+	sed -i 's/\[.*\]/\[ 系统不支持MIUI云温控或被屏蔽删除，请使用支持MIUI云温控的设备及系统 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 	exit 0
+fi
+if [ "$data_vendor_thermal" != '/data/vendor/thermal/' ]; then
+	sed -i 's/\[.*\]/\[ 云温控路径未适配，请联系作者适配 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+	exit 0
+fi
+if [ ! -d "/data/vendor/thermal/config" ]; then
+	mkdir -p "/data/vendor/thermal/config" >/dev/null 2>&1
 fi
 chmod 0771 "/data/vendor/thermal" >/dev/null 2>&1
 chmod 0771 "/data/vendor/thermal/config" >/dev/null 2>&1
