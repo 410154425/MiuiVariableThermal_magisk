@@ -6,6 +6,7 @@ MODDIR=${0%/*}
 chmod 0755 "$MODDIR/up"
 chmod 0755 "$MODDIR/mvt.sh"
 chmod 0755 "$MODDIR/upmvt.sh"
+chmod 0755 "$MODDIR/testing.sh"
 chmod 0644 "$MODDIR/config.conf"
 sleep 1
 up=1
@@ -49,6 +50,7 @@ if [ "$data_vendor_thermal" != '/data/vendor/thermal/' ]; then
 	sed -i 's/\[.*\]/\[ 云温控路径未适配，请联系作者适配 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 	exit 0
 fi
+chattr -R -i -a "/data/vendor/thermal"
 if [ ! -d "/data/vendor/thermal/config" ]; then
 	mkdir -p "/data/vendor/thermal/config" >/dev/null 2>&1
 fi

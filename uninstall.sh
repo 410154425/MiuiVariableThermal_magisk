@@ -1,5 +1,6 @@
 MODDIR=${0%/*}
 delete_conf() {
+	chattr -R -i -a "/data/vendor/thermal"
 	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
 	thermal_n="$(echo "$thermal_list" | egrep 'thermal\-' | wc -l)"
 	until [ "$thermal_n" = "0" ] ; do
