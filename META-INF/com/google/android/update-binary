@@ -18,8 +18,7 @@ require_new_magisk() {
 
 thermal_magisk() {
   ui_print "*******************************"
-  ui_print " 系统不支持MIUI云温控或被屏蔽删除 "
-  ui_print " 请使用支持MIUI云温控的设备及系统 "
+  ui_print " 系统不支持MIUI云温控，无法使用 "
   ui_print "*******************************"
   exit 2
 }

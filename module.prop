@@ -1,7 +1,7 @@
 id=MiuiVariableThermal
 name=MIUI动态温控
-version=20220913
-versionCode=2022091300
+version=20220914
+versionCode=2022091400
 author=top大佬(酷安)
-description=[ 当前温控：未知 ] 对MIUI云温控/data/vendor/thermal/config/进行动态修改，使不同场景使用不同的温控文件或关闭温控进程，比如充电或游戏场景使用空白文件或关闭温控进程实现充电和性能不受温控文件或温控进程的限制，其它场景自动恢复默认温控文件，配置路径：/data/adb/modules/MiuiVariableThermal/config.conf，日志log.log。 
+description=[ 当前温控：未知 ] 利用MIUI云温控，使不同场景使用不同的温控配置或是关闭温控进程，比如充电或游戏场景实现快充和性能不受温控的限制，其它场景自动恢复默认温控，配置路径：/data/adb/modules/MiuiVariableThermal/config.conf，日志log.log。 
 # ##

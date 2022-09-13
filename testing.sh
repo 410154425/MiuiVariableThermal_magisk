@@ -12,31 +12,44 @@ thermal_app="$(echo "$config_conf" | egrep '^thermal_app=' | sed -n 's/thermal_a
 global_switch="$(echo "$config_conf" | egrep '^global_switch=' | sed -n 's/global_switch=//g;$p')"
 echo --------- 版本 ----------
 echo "$module_version ,$module_versionCode"
-echo --------- 状态 ----------
-echo "$state"
-getprop vendor.sys.thermal.data.path
-pgrep 'mi_thermald'
-getprop sys.thermal.data.path
-pgrep 'thermal-engine'
+echo --------- 适配 ----------
 dumpsys activity | egrep 'mResume'
 dumpsys window | egrep 'mCurrentFocus'
+echo "$state"
+getprop vendor.sys.thermal.data.path
+which_thermal="$(which -a 'mi_thermald')"
+cat_thermal="$(cat "$which_thermal" | wc -c)"
+pgrep_thermal="$(pgrep 'mi_thermald')"
+echo "$which_thermal $cat_thermal $pgrep_thermal"
+getprop sys.thermal.data.path
+which_thermal="$(which -a 'thermal-engine')"
+cat_thermal="$(cat "$which_thermal" | wc -c)"
+pgrep_thermal="$(pgrep 'thermal-engine')"
+echo "$which_thermal $cat_thermal $pgrep_thermal"
 if [ -f "/data/vendor/thermal/decrypt.txt" ]; then
-	decrypt_l="$(cat "/data/vendor/thermal/decrypt.txt" | wc -l)"
-	echo "yes decrypt.txt $decrypt_l"
+	decrypt_txt="$(cat "/data/vendor/thermal/decrypt.txt" | wc -c)"
+	echo "yes decrypt.txt $decrypt_txt"
 else
 	echo "no decrypt.txt"
 fi
+if [ -f "/data/vendor/thermal/thermal.dump" ]; then
+	thermal_dump="$(cat "/data/vendor/thermal/thermal.dump" | wc -c)"
+	echo "yes thermal.dump $thermal_dump"
+else
+	echo "no thermal.dump"
+fi
 echo --------- 系统温控 ----------
-thermal_normal="$(cat "$MODDIR/thermal_list")"
+find /system/*/* -name "*thermal*.conf" -o -name "*mi_thermald*" -o -name "*thermal-engine*" > "$MODDIR/testing_list"
+thermal_normal="$(cat "$MODDIR/testing_list")"
 thermal_normal_n="$(echo "$thermal_normal" | wc -l)"
 until [ "$thermal_normal_n" = "0" ] ; do
 	thermal_normal_p="$(echo "$thermal_normal" | sed -n "${thermal_normal_n}p")"
-	thermal_normal_c="$(cat "/system/vendor/etc/$thermal_normal_p" | wc -c)"
+	thermal_normal_c="$(cat "$thermal_normal_p" | wc -c)"
 	thermal_etc="$thermal_normal_p $thermal_normal_c , $thermal_etc"
 	thermal_normal_n="$(( $thermal_normal_n - 1 ))"
 done
 echo "$thermal_etc"
-echo --------- MIUI云控 ----------
+echo --------- MIUI云温控 ----------
 thermal_normal="$(cat "$MODDIR/thermal_list")"
 thermal_normal_n="$(echo "$thermal_normal" | wc -l)"
 until [ "$thermal_normal_n" = "0" ] ; do
