@@ -15,4 +15,5 @@ if [ "$(echo -E "$up1" | egrep '^# ##' | sed -n '$p')" = '# ##' -a "$(echo -E "$
 	fi
 	chmod 0755 "$MODDIR/mvt.sh"
 	chmod 0644 "$MODDIR/module.prop"
+	rm -f "$MODDIR/mode" > /dev/null 2>&1
 fi

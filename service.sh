@@ -26,7 +26,7 @@ if [ ! -n "$data_vendor_thermal" ]; then
 	data_vendor_thermal="$(getprop sys.thermal.data.path)"
 fi
 if [ ! -n "$data_vendor_thermal" ]; then
-	sed -i 's/\[.*\]/\[ 系统不支持MIUI云温控，无法使用 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+	sed -i 's/\[.*\]/\[ 系统不支持MIUI云温控或被屏蔽删除了，请恢复后再使用 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 	exit 0
 fi
 if [ "$data_vendor_thermal" != '/data/vendor/thermal/' ]; then
@@ -50,7 +50,7 @@ until [ "$thermal_normal_n" = "0" ] ; do
 done
 rm -f "$MODDIR/mode" > /dev/null 2>&1
 if [ ! -f '/data/vendor/thermal' ]; then
-	sed -i 's/\[.*\]/\[ 可能系统不支持MIUI云温控，也可能被第三方屏蔽或删除了，请自行排查重启后再试 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
+	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则可能系统不支持MIUI云温控，也可能被第三方屏蔽或删除了，请自行排查重启后再试 \]/g' "$MODDIR/module.prop" >/dev/null 2>&1
 fi
 until [ -d '/data/vendor/thermal' ] ; do
 	sleep 1
