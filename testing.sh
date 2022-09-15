@@ -10,7 +10,6 @@ module_versionCode="$(cat "$MODDIR/module.prop" | egrep 'versionCode=' | sed -n 
 thermal_charge="$(echo "$config_conf" | egrep '^thermal_charge=' | sed -n 's/thermal_charge=//g;$p')"
 thermal_app="$(echo "$config_conf" | egrep '^thermal_app=' | sed -n 's/thermal_app=//g;$p')"
 global_switch="$(echo "$config_conf" | egrep '^global_switch=' | sed -n 's/global_switch=//g;$p')"
-fps="$(echo "$config_conf" | egrep '^fps=')"
 echo --------- 版本 ----------
 echo "$module_version ,$module_versionCode"
 echo --------- 适配 ----------
@@ -27,6 +26,8 @@ which_thermal="$(which -a 'thermal-engine')"
 cat_thermal="$(cat "$which_thermal" | wc -c)"
 pgrep_thermal="$(pgrep 'thermal-engine')"
 echo "$which_thermal $cat_thermal $pgrep_thermal"
+fps_clear="$(echo "$config_conf" | egrep '^fps_clear=')"
+echo "$fps_clear"
 if [ -f "/data/vendor/thermal/decrypt.txt" ]; then
 	decrypt_txt="$(cat "/data/vendor/thermal/decrypt.txt" | wc -c)"
 	echo "yes decrypt.txt $decrypt_txt"
@@ -39,7 +40,6 @@ if [ -f "/data/vendor/thermal/thermal.dump" ]; then
 else
 	echo "no thermal.dump"
 fi
-echo "$fps"
 echo --------- 系统温控 ----------
 find /system/*/* -name "*thermal*.conf" -o -name "*mi_thermald*" -o -name "*thermal-engine*" > "$MODDIR/testing_list"
 thermal_normal="$(cat "$MODDIR/testing_list")"
