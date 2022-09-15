@@ -26,8 +26,6 @@ which_thermal="$(which -a 'thermal-engine')"
 cat_thermal="$(cat "$which_thermal" | wc -c)"
 pgrep_thermal="$(pgrep 'thermal-engine')"
 echo "$which_thermal $cat_thermal $pgrep_thermal"
-fps_clear="$(echo "$config_conf" | egrep '^fps_clear=')"
-echo "$fps_clear"
 if [ -f "/data/vendor/thermal/decrypt.txt" ]; then
 	decrypt_txt="$(cat "/data/vendor/thermal/decrypt.txt" | wc -c)"
 	echo "yes decrypt.txt $decrypt_txt"

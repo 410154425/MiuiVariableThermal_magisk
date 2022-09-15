@@ -180,11 +180,6 @@ if [ -f "$MODDIR/disable" -o "$global_switch" = "0" ]; then
 	fi
 	exit 0
 fi
-fps_clear="$(echo "$config_conf" | egrep '^fps_clear=' | sed -n 's/fps_clear=//g;$p')"
-if [ "$fps_clear" = "1" ]; then
-	pm clear com.miui.powerkeeper >/dev/null 2>&1
-	pm clear com.xiaomi.joyose >/dev/null 2>&1
-fi
 thermal_program_id="$(pgrep 'mi_thermald|thermal-engine')"
 if [ -f "$MODDIR/thermal_stop" -a -n "$thermal_program_id" ]; then
 	pkill -9 'mi_thermald' >/dev/null 2>&1
@@ -232,5 +227,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022091500
+#version=2022091600
 # ##
