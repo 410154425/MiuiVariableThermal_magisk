@@ -10,6 +10,7 @@ module_versionCode="$(cat "$MODDIR/module.prop" | egrep 'versionCode=' | sed -n 
 thermal_charge="$(echo "$config_conf" | egrep '^thermal_charge=' | sed -n 's/thermal_charge=//g;$p')"
 thermal_app="$(echo "$config_conf" | egrep '^thermal_app=' | sed -n 's/thermal_app=//g;$p')"
 global_switch="$(echo "$config_conf" | egrep '^global_switch=' | sed -n 's/global_switch=//g;$p')"
+fps="$(echo "$config_conf" | egrep '^fps=')"
 echo --------- 版本 ----------
 echo "$module_version ,$module_versionCode"
 echo --------- 适配 ----------
@@ -38,6 +39,7 @@ if [ -f "/data/vendor/thermal/thermal.dump" ]; then
 else
 	echo "no thermal.dump"
 fi
+echo "$fps"
 echo --------- 系统温控 ----------
 find /system/*/* -name "*thermal*.conf" -o -name "*mi_thermald*" -o -name "*thermal-engine*" > "$MODDIR/testing_list"
 thermal_normal="$(cat "$MODDIR/testing_list")"
