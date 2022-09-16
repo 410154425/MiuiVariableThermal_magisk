@@ -3,5 +3,5 @@ name=MIUI动态温控
 version=20220917
 versionCode=2022091700
 author=top大佬(酷安)
-description=[ 当前温控：未知 ] 利用MIUI云温控，使不同场景使用不同的温控或关闭温控，比如充电或游戏场景实现快充和性能不受温控的限制，其它场景自动恢复默认温控，游戏场景可配置锁定刷新率，配置路径：/data/adb/modules/MiuiVariableThermal/config.conf，日志log.log。 
+description=[ 当前温控：未知 ] 利用MIUI云温控，使不同场景使用不同的温控或关闭温控，比如充电或游戏场景实现快充和性能不受温控的限制，其它场景自动恢复默认温控，可配置锁定屏幕刷新率，配置路径：/data/adb/modules/MiuiVariableThermal/config.conf，日志log.log。 
 # ##
