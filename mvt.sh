@@ -6,16 +6,20 @@ if [ "$log_n" -gt "20" ]; then
 fi
 config_conf="$(cat "$MODDIR/config.conf" | egrep -v '^#')"
 mode="$(cat "$MODDIR/mode")"
-thermal_unlimited="$(echo "$config_conf" | egrep '^thermal_unlimited=' | sed -n 's/thermal_unlimited=//g;$p')"
 chattr -R -i -a '/data/vendor/thermal'
 if [ ! -d '/data/vendor/thermal/config' ]; then
 	mkdir -p '/data/vendor/thermal/config' > /dev/null 2>&1
 fi
 chmod -R 0771 '/data/vendor/thermal' > /dev/null 2>&1
 t_blank_md5="$(md5sum "$MODDIR/t_blank" | cut -d ' ' -f '1')"
-md5_blank="eea43bc6fb93d22d052ddc74ade02830"
+md5_blank="96797b0472c5f6c06ede5a3555d5e10a"
 if [ "$t_blank_md5" != "$md5_blank" ]; then
-	sed -i 's/\[.*\]/\[ 模块缺少文件t_blank，请重新安装重启 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+	rm -f "$MODDIR/mode" > /dev/null 2>&1
+	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块t_blank文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+	thermal_t_blank_md5="$(md5sum "$MODDIR/thermal/t_blank" | cut -d ' ' -f '1')"
+	if [ "$thermal_t_blank_md5" = "$md5_blank" ]; then
+		cp "$MODDIR/thermal/t_blank" "$MODDIR/t_blank" > /dev/null 2>&1
+	fi
 	exit 0
 fi
 start_thermal_program() {
@@ -25,9 +29,6 @@ start_thermal_program() {
 	rm -f '/data/vendor/thermal/thermal.dump' > /dev/null 2>&1
 	start mi_thermald > /dev/null 2>&1
 	start thermal-engine > /dev/null 2>&1
-	if [ -f "$MODDIR/thermal_stop" ]; then
-		rm -f "$MODDIR/thermal_stop" > /dev/null 2>&1
-	fi
 	thermal_program_id="$(pgrep 'mi_thermald|thermal-engine')"
 	if [ -n "$thermal_program_id" ]; then
 		if [ ! -f '/data/vendor/thermal/thermal.dump' ]; then
@@ -38,15 +39,6 @@ start_thermal_program() {
 		sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则系统温控程序被屏蔽或删除了，请恢复重启后再使用 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 		exit 0
 	fi
-}
-stop_thermal_program() {
-	stop mi_thermald > /dev/null 2>&1
-	stop thermal-engine > /dev/null 2>&1
-	start mi_thermald > /dev/null 2>&1
-	start thermal-engine > /dev/null 2>&1
-	stop mi_thermald > /dev/null 2>&1
-	stop thermal-engine > /dev/null 2>&1
-	touch "$MODDIR/thermal_stop" > /dev/null 2>&1
 }
 t_blank_conf() {
 	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
@@ -60,20 +52,11 @@ t_blank_conf() {
 		fi
 		thermal_n="$(( $thermal_n - 1 ))"
 	done
-	if [ "$thermal_unlimited" = "1" ]; then
-		if [ "$log_log" = "1" -o "$mode" != "6" ]; then
-			stop_thermal_program
-			echo "6" > "$MODDIR/mode"
-			sed -i 's/\[.*\]/\[ 当前温控：极限模式 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
-			echo "$(date +%F_%T) 当前温控：极限模式" >> "$MODDIR/log.log"
-		fi
-	else
-		if [ "$log_log" = "1" -o "$mode" != "5" ]; then
-			start_thermal_program
-			echo "5" > "$MODDIR/mode"
-			sed -i 's/\[.*\]/\[ 当前温控：空白文件 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
-			echo "$(date +%F_%T) 当前温控：空白文件" >> "$MODDIR/log.log"
-		fi
+	if [ "$log_log" = "1" -o "$mode" != "5" ]; then
+		start_thermal_program
+		echo "5" > "$MODDIR/mode"
+		sed -i 's/\[.*\]/\[ 当前温控：无限制 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+		echo "$(date +%F_%T) 当前温控：无限制" >> "$MODDIR/log.log"
 	fi
 }
 thermal_app_conf() {
@@ -194,12 +177,6 @@ if [ -f "$MODDIR/disable" -o "$global_switch" = "0" ]; then
 	fi
 	exit 0
 fi
-thermal_program_id="$(pgrep 'mi_thermald|thermal-engine')"
-if [ -f "$MODDIR/thermal_stop" -a -n "$thermal_program_id" ]; then
-	killall -9 'mi_thermald' > /dev/null 2>&1
-	killall -9 'thermal-engine' > /dev/null 2>&1
-	stop_thermal_program
-fi
 screen_on="$(dumpsys deviceidle get screen)"
 thermal_app="$(echo "$config_conf" | egrep '^thermal_app=' | sed -n 's/thermal_app=//g;$p')"
 if [ "$screen_on" != 'false' -a "$thermal_app" = "1" ]; then
@@ -224,7 +201,7 @@ if [ "$screen_on" != 'false' -a "$thermal_app" = "1" ]; then
 			fi
 		fi
 		thermal_app_c="$(cat "$MODDIR/thermal/thermal-app.conf" | wc -c)"
-		if [ "$thermal_app_c" -lt "20" ]; then
+		if [ "$thermal_app_c" -lt "100" ]; then
 			t_blank_conf
 			exit 0
 		else
@@ -252,7 +229,7 @@ if [ "$thermal_charge" = "1" ]; then
 	dumpsys_charging="$(dumpsys deviceidle get charging)"
 	if [ "$dumpsys_charging" = "true" ]; then
 		thermal_charge_c="$(cat "$MODDIR/thermal/thermal-charge.conf" | wc -c)"
-		if [ "$thermal_charge_c" -lt "20" ]; then
+		if [ "$thermal_charge_c" -lt "100" ]; then
 			t_blank_conf
 			exit 0
 		else
@@ -263,7 +240,7 @@ if [ "$thermal_charge" = "1" ]; then
 fi
 if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 	thermal_default_c="$(cat "$MODDIR/thermal/thermal-default.conf" | wc -c)"
-	if [ "$thermal_default_c" -lt "20" ]; then
+	if [ "$thermal_default_c" -lt "100" ]; then
 		t_blank_conf
 		exit 0
 	else
@@ -273,5 +250,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022091700
+#version=2022091800
 # ##
