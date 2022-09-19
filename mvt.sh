@@ -181,9 +181,9 @@ screen_on="$(dumpsys deviceidle get screen)"
 thermal_app="$(echo "$config_conf" | egrep '^thermal_app=' | sed -n 's/thermal_app=//g;$p')"
 if [ "$screen_on" != 'false' -a "$thermal_app" = "1" ]; then
 	app_list="$(echo "$config_conf" | egrep '^app_list=' | sed -n 's/app_list=//g;$p')"
-	activity_window="$(dumpsys activity | egrep 'mResume' | egrep "$app_list")"
+	activity_window="$(dumpsys window | egrep 'mCurrentFocus' | egrep "$app_list")"
 	if [ ! -n "$activity_window" ]; then
-		activity_window="$(dumpsys window | egrep 'mCurrentFocus' | egrep "$app_list")"
+		activity_window="$(dumpsys activity | egrep 'mResume' | egrep "$app_list")"
 	fi
 	if [ -n "$app_list" -a -n "$activity_window" ]; then
 		fps="$(echo "$config_conf" | egrep '^fps=' | sed -n 's/fps=//g;$p' | cut -d ' ' -f '1')"
