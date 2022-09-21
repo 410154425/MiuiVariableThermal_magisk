@@ -287,10 +287,15 @@ if [ "$screen_on" != 'false' ]; then
 		app_list="$(echo "$config_conf" | egrep '^app_list=' | sed -n 's/app_list=//g;$p')"
 		if [ -n "$app_list" ]; then
 			activity_window="$(dumpsys window | egrep 'mCurrentFocus' | egrep "$app_list")"
-			if [ ! -n "$activity_window" ]; then
-				activity_window="$(dumpsys activity | egrep 'mResume' | egrep "$app_list")"
+			if [ -f "$MODDIR/mCurrentFocus" ]; then
+				if [ ! -n "$activity_window" ]; then
+					activity_window="$(dumpsys activity | egrep 'mResume' | egrep "$app_list")"
+				fi
 			fi
 			if [ -n "$activity_window" ]; then
+				if [ ! -f "$MODDIR/mCurrentFocus" ]; then
+					touch "$MODDIR/mCurrentFocus" > /dev/null 2>&1
+				fi
 				fps_lock
 				dumpsys_charging="$(dumpsys deviceidle get charging)"
 				if [ "$dumpsys_charging" = "true" ]; then
@@ -304,6 +309,8 @@ if [ "$screen_on" != 'false' ]; then
 					thermal_app_conf
 					exit 0
 				fi
+			else
+				rm -f "$MODDIR/mCurrentFocus" > /dev/null 2>&1
 			fi
 		fi
 	fi
@@ -336,5 +343,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022092100
+#version=2022092200
 # ##
