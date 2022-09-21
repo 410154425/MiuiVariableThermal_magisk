@@ -10,6 +10,10 @@ chmod 0755 "$MODDIR/testing.sh"
 chmod 0644 "$MODDIR/config.conf"
 sleep 1
 up=1
+echo "touch \"$MODDIR/on_bypass\"" > "$MODDIR/开启MIUI旁路供电.sh"
+echo "rm -f \"$MODDIR/on_bypass\"" > "$MODDIR/关闭MIUI旁路供电.sh"
+chmod 0755 "$MODDIR/开启MIUI旁路供电.sh"
+chmod 0755 "$MODDIR/关闭MIUI旁路供电.sh"
 echo "#执行该脚本，跳转微信网页给作者投币捐赠" > "$MODDIR/.投币捐赠.sh"
 echo "am start -n com.tencent.mm/.plugin.webview.ui.tools.WebViewUI -d https://payapp.weixin.qq.com/qrpay/order/home2?key=idc_CHNDVI_dHFNbTNZIWMto44dgjR3CA-- > /dev/null 2>&1" >> "$MODDIR/.投币捐赠.sh"
 echo "echo \"\"" >> "$MODDIR/.投币捐赠.sh"
