@@ -12,7 +12,7 @@ if [ ! -d '/data/vendor/thermal/config' ]; then
 fi
 chmod -R 0771 '/data/vendor/thermal' > /dev/null 2>&1
 t_blank_md5="$(md5sum "$MODDIR/t_blank" | cut -d ' ' -f '1')"
-md5_blank="96797b0472c5f6c06ede5a3555d5e10a"
+md5_blank="7787e0abdb1f98d5c7fd713fa70a1884"
 if [ "$t_blank_md5" != "$md5_blank" ]; then
 	rm -f "$MODDIR/mode" > /dev/null 2>&1
 	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块t_blank文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
@@ -23,7 +23,7 @@ if [ "$t_blank_md5" != "$md5_blank" ]; then
 	exit 0
 fi
 t_bypass_md5="$(md5sum "$MODDIR/t_bypass" | cut -d ' ' -f '1')"
-md5_bypass="c3af0ba0b1cd16147e0fb919a9eea2b9"
+md5_bypass="9385b51aecde23f39aec307bdd362b58"
 if [ "$t_bypass_md5" != "$md5_bypass" ]; then
 	rm -f "$MODDIR/mode" > /dev/null 2>&1
 	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块t_bypass文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
@@ -92,6 +92,11 @@ bypass_supply_conf() {
 			bypass_supply_level="$(echo "$config_conf" | egrep '^bypass_supply_level=' | sed -n 's/bypass_supply_level=//g;$p')"
 			if [ -n "$battery_level" -a -n "$bypass_supply_level" -a "$battery_level" -ge "$bypass_supply_level" ]; then
 				bypass_supply_mode=3
+			else
+				bypass_supply_app="$(echo "$config_conf" | egrep '^bypass_supply_app=' | sed -n 's/bypass_supply_app=//g;$p')"
+				if [ "$app_on" = "1" -a "$bypass_supply_app" = "1" ]; then
+					bypass_supply_mode=4
+				fi
 			fi
 		fi
 	fi
@@ -122,6 +127,15 @@ bypass_supply_conf() {
 			echo "$(date +%F_%T) 当前温控：电量-旁路供电" >> "$MODDIR/log.log"
 		fi
 		exit 0
+	elif [ "$bypass_supply_mode" = "4" ]; then
+		bypass_supply_md5
+		if [ "$log_log" = "1" -o "$mode" != "9" ]; then
+			start_thermal_program
+			echo "9" > "$MODDIR/mode"
+			sed -i 's/\[.*\]/\[ 当前温控：游戏-旁路供电 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+			echo "$(date +%F_%T) 当前温控：游戏-旁路供电" >> "$MODDIR/log.log"
+		fi
+		exit 0
 	fi
 }
 t_blank_conf() {
@@ -139,8 +153,51 @@ t_blank_conf() {
 	if [ "$log_log" = "1" -o "$mode" != "5" ]; then
 		start_thermal_program
 		echo "5" > "$MODDIR/mode"
-		sed -i 's/\[.*\]/\[ 当前温控：无限制 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
-		echo "$(date +%F_%T) 当前温控：无限制" >> "$MODDIR/log.log"
+		sed -i 's/\[.*\]/\[ 当前温控：零档-无限制 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+		echo "$(date +%F_%T) 当前温控：零档-无限制" >> "$MODDIR/log.log"
+	fi
+}
+thermal_scene_conf() {
+	thermal_scene_md5="$(md5sum "$MODDIR/thermal/$thermal_scene/thermal-scene.conf" | cut -d ' ' -f '1')"
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
+	thermal_n="$(echo "$thermal_list" | egrep 'thermal\-' | wc -l)"
+	until [ "$thermal_n" = "0" ] ; do
+		thermal_p="$(echo "$thermal_list" | sed -n "${thermal_n}p")"
+		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$thermal_p" | cut -d ' ' -f '1')"
+		if [ -f "/system/vendor/etc/$thermal_p" -a "$thermal_config_md5" != "$thermal_scene_md5" ]; then
+			cp "$MODDIR/thermal/$thermal_scene/thermal-scene.conf" "/data/vendor/thermal/config/$thermal_p" > /dev/null 2>&1
+			log_log=1
+		fi
+		thermal_n="$(( $thermal_n - 1 ))"
+	done
+	if [ "$thermal_scene" = "1" ]; then
+		if [ "$log_log" = "1" -o "$mode" != "11" ]; then
+			start_thermal_program
+			echo "11" > "$MODDIR/mode"
+			sed -i 's/\[.*\]/\[ 当前温控：一档-无限制 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+			echo "$(date +%F_%T) 当前温控：一档-无限制" >> "$MODDIR/log.log"
+		fi
+	elif [ "$thermal_scene" = "2" ]; then
+		if [ "$log_log" = "1" -o "$mode" != "12" ]; then
+			start_thermal_program
+			echo "12" > "$MODDIR/mode"
+			sed -i 's/\[.*\]/\[ 当前温控：二档-无限制 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+			echo "$(date +%F_%T) 当前温控：二档-无限制" >> "$MODDIR/log.log"
+		fi
+	elif [ "$thermal_scene" = "3" ]; then
+		if [ "$log_log" = "1" -o "$mode" != "13" ]; then
+			start_thermal_program
+			echo "13" > "$MODDIR/mode"
+			sed -i 's/\[.*\]/\[ 当前温控：三档-无限制 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+			echo "$(date +%F_%T) 当前温控：三档-无限制" >> "$MODDIR/log.log"
+		fi
+	else
+		if [ "$log_log" = "1" ]; then
+			start_thermal_program
+			echo "11" > "$MODDIR/mode"
+			sed -i 's/\[.*\]/\[ 当前温控：其它-无限制 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+			echo "$(date +%F_%T) 当前温控：其它-无限制" >> "$MODDIR/log.log"
+		fi
 	fi
 }
 thermal_app_conf() {
@@ -280,6 +337,7 @@ if [ -f "$MODDIR/disable" -o "$global_switch" = "0" ]; then
 	fi
 	exit 0
 fi
+thermal_scene="$(echo "$config_conf" | egrep '^thermal_scene=' | sed -n 's/thermal_scene=//g;$p')"
 screen_on="$(dumpsys deviceidle get screen)"
 if [ "$screen_on" != 'false' ]; then
 	thermal_app="$(echo "$config_conf" | egrep '^thermal_app=' | sed -n 's/thermal_app=//g;$p')"
@@ -299,16 +357,25 @@ if [ "$screen_on" != 'false' ]; then
 				fps_lock
 				dumpsys_charging="$(dumpsys deviceidle get charging)"
 				if [ "$dumpsys_charging" = "true" ]; then
+					app_on=1
 					bypass_supply_conf
 				fi
 				thermal_app_c="$(cat "$MODDIR/thermal/thermal-app.conf" | wc -c)"
 				if [ "$thermal_app_c" -lt "100" ]; then
-					t_blank_conf
-					exit 0
+					if [ "$thermal_scene" -ge "1" ]; then
+						thermal_scene_c="$(cat "$MODDIR/thermal/$thermal_scene/thermal-scene.conf" | wc -c)"
+						if [ "$thermal_scene_c" -lt "100" ]; then
+							t_blank_conf
+						else
+							thermal_scene_conf
+						fi
+					else
+						t_blank_conf
+					fi
 				else
 					thermal_app_conf
-					exit 0
 				fi
+				exit 0
 			else
 				rm -f "$MODDIR/mCurrentFocus" > /dev/null 2>&1
 			fi
@@ -318,30 +385,38 @@ fi
 fps_recovery
 dumpsys_charging="$(dumpsys deviceidle get charging)"
 if [ "$dumpsys_charging" = "true" ]; then
+	app_on=0
 	bypass_supply_conf
 	thermal_charge="$(echo "$config_conf" | egrep '^thermal_charge=' | sed -n 's/thermal_charge=//g;$p')"
 	if [ "$thermal_charge" = "1" ]; then
 		thermal_charge_c="$(cat "$MODDIR/thermal/thermal-charge.conf" | wc -c)"
 		if [ "$thermal_charge_c" -lt "100" ]; then
-			t_blank_conf
-			exit 0
+			if [ "$thermal_scene" -ge "1" ]; then
+				thermal_scene_c="$(cat "$MODDIR/thermal/$thermal_scene/thermal-scene.conf" | wc -c)"
+				if [ "$thermal_scene_c" -lt "100" ]; then
+					t_blank_conf
+				else
+					thermal_scene_conf
+				fi
+			else
+				t_blank_conf
+			fi
 		else
 			thermal_charge_conf
-			exit 0
 		fi
+		exit 0
 	fi
 fi
 if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 	thermal_default_c="$(cat "$MODDIR/thermal/thermal-default.conf" | wc -c)"
 	if [ "$thermal_default_c" -lt "100" ]; then
 		t_blank_conf
-		exit 0
 	else
 		thermal_default_conf
-		exit 0
 	fi
+	exit 0
 fi
 thermal_conf
 exit 0
-#version=2022092200
+#version=2022092300
 # ##

@@ -45,11 +45,15 @@ bypass_supply_mode=0
 if [ -f "$MODDIR/on_bypass" ]; then
 	bypass_supply_mode=1
 fi
+thermal_scene="$(echo "$config_conf" | egrep '^thermal_scene=' | sed -n 's/thermal_scene=//g;$p')"
+thermal_charge="$(echo "$config_conf" | egrep '^thermal_charge=' | sed -n 's/thermal_charge=//g;$p')"
+thermal_app="$(echo "$config_conf" | egrep '^thermal_app=' | sed -n 's/thermal_app=//g;$p')"
 battery_level="$(cat '/sys/class/power_supply/battery/capacity')"
 bypass_supply_level="$(echo "$config_conf" | egrep '^bypass_supply_level=' | sed -n 's/bypass_supply_level=//g;$p')"
 battery_temp="$(cat '/sys/class/power_supply/battery/temp' | cut -c '1-2')"
 bypass_supply_temp="$(echo "$config_conf" | egrep '^bypass_supply_temp=' | sed -n 's/bypass_supply_temp=//g;$p')"
-echo "充电$dumpsys_charging 手动旁路$bypass_supply_mode 电量$battery_level 电量旁路$bypass_supply_level 温度$battery_temp 温度旁路$bypass_supply_temp"
+bypass_supply_app="$(echo "$config_conf" | egrep '^bypass_supply_app=' | sed -n 's/bypass_supply_app=//g;$p')"
+echo "温控档位$thermal_scene 充电场景$thermal_charge 游戏场景$thermal_app 充电$dumpsys_charging 手动旁路$bypass_supply_mode 电量$battery_level 电量旁路$bypass_supply_level 温度$battery_temp 温度旁路$bypass_supply_temp 游戏旁路$bypass_supply_app"
 echo --------- 系统温控 ----------
 find /system/*/* -name "*thermal*.conf" -o -name "*mi_thermald*" -o -name "*thermal-engine*" > "$MODDIR/testing_list"
 thermal_normal="$(cat "$MODDIR/testing_list")"
@@ -79,8 +83,8 @@ if [ -f "$MODDIR/disable" -o "$global_switch" = "0" ]; then
 fi
 if [ "$thermal_app" = "1" ]; then
 	app_list="$(echo "$config_conf" | egrep '^app_list=' | sed -n 's/app_list=//g;$p')"
-	activity_mResume="$(dumpsys activity | egrep 'mResume' | egrep "$app_list")"
-	if [ -n "$app_list" -a -n "$activity_mResume" ]; then
+	activity_window="$(dumpsys activity | egrep 'mResume' | egrep "$app_list")"
+	if [ -n "$app_list" -a -n "$activity_window" ]; then
 		echo --------- 游戏场景 ----------
 		thermal_app_c="$(cat "$MODDIR/thermal/thermal-app.conf" | wc -c)"
 		echo "thermal-app.conf $thermal_app_c"
