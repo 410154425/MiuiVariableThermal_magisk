@@ -192,9 +192,9 @@ thermal_scene_conf() {
 			echo "$(date +%F_%T) 当前温控：三档-无限制" >> "$MODDIR/log.log"
 		fi
 	else
-		if [ "$log_log" = "1" ]; then
+		if [ "$log_log" = "1" -o "$mode" != "10" ]; then
 			start_thermal_program
-			echo "11" > "$MODDIR/mode"
+			echo "10" > "$MODDIR/mode"
 			sed -i 's/\[.*\]/\[ 当前温控：其它-无限制 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 			echo "$(date +%F_%T) 当前温控：其它-无限制" >> "$MODDIR/log.log"
 		fi
