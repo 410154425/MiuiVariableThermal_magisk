@@ -8,8 +8,8 @@ delete_conf() {
 		rm -f "/data/vendor/thermal/config/$thermal_p" > /dev/null 2>&1
 		thermal_n="$(( $thermal_n - 1 ))"
 	done
-	rm -rf '/data/vendor/thermal/config' > /dev/null 2>&1
-	mkdir -p '/data/vendor/thermal/config' > /dev/null 2>&1
-	chmod -R 0771 '/data/vendor/thermal' > /dev/null 2>&1
+	rm -rf '/data/vendor/thermal/config/' > /dev/null 2>&1
+	mkdir -p '/data/vendor/thermal/config/' > /dev/null 2>&1
+	chmod -R 0771 '/data/vendor/thermal/' > /dev/null 2>&1
 }
 delete_conf
