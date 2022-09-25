@@ -16,19 +16,6 @@ require_new_magisk() {
   exit 1
 }
 
-thermal_magisk() {
-  ui_print "*******************************"
-  ui_print " 系统不支持MIUI云温控或被屏蔽删除了 "
-  ui_print " 请恢复后再使用 "
-  ui_print "*******************************"
-  exit 2
-}
-
-data_vendor_thermal="$(getprop vendor.sys.thermal.data.path)"
-if [ ! -n "$data_vendor_thermal" ]; then
-	data_vendor_thermal="$(getprop sys.thermal.data.path)"
-fi
-if [ -n "$data_vendor_thermal" ]; then
 #########################
 # Load util_functions.sh
 #########################
@@ -41,8 +28,6 @@ mount /data 2>/dev/null
 [ -f /data/adb/magisk/util_functions.sh ] || require_new_magisk
 . /data/adb/magisk/util_functions.sh
 [ $MAGISK_VER_CODE -lt 20400 ] && require_new_magisk
+
 install_module
-else
-thermal_magisk
-fi
 exit 0
