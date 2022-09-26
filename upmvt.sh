@@ -1,5 +1,5 @@
 MODDIR=${0%/*}
-module_version="$(cat "$MODDIR/module.prop" | egrep 'version=' | sed -n 's/.*version\=//g;s/(.*//g;$p')"
+module_version="$(cat "$MODDIR/module.prop" | egrep 'version=' | sed -n 's/.*version=//g;s/(.*//g;$p')"
 Host_version="$(cat "$MODDIR/mvt.sh" | egrep '^#version=' | sed -n 's/.*version=//g;$p')"
 update_curl="http://z23r562938.iask.in/MVT_magisk"
 up1="$(curl -s --connect-timeout 3 -m 5 "$update_curl/module.prop")"

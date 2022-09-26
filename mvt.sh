@@ -308,14 +308,7 @@ thermal_conf() {
 	fi
 }
 delete_conf() {
-	chattr -R -i -a '/data/vendor/thermal'
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
-	thermal_n="$(echo "$thermal_list" | egrep 'thermal\-' | wc -l)"
-	until [ "$thermal_n" = "0" ] ; do
-		thermal_p="$(echo "$thermal_list" | sed -n "${thermal_n}p")"
-		rm -f "/data/vendor/thermal/config/$thermal_p" > /dev/null 2>&1
-		thermal_n="$(( $thermal_n - 1 ))"
-	done
+	chattr -R -i -a '/data/vendor/thermal/'
 	rm -rf '/data/vendor/thermal/config/' > /dev/null 2>&1
 	mkdir -p '/data/vendor/thermal/config/' > /dev/null 2>&1
 	chmod -R 0771 '/data/vendor/thermal/' > /dev/null 2>&1
@@ -324,7 +317,7 @@ fps_lock() {
 	fps="$(echo "$config_conf" | egrep '^fps=' | sed -n 's/fps=//g;$p' | cut -d ' ' -f '1')"
 	if [ -n "$fps" -a "$fps" != "0" ]; then
 		DisplayModeRecord="$(dumpsys display | egrep 'DisplayModeRecord')"
-		DisplayModeRecord_id="$(echo "$DisplayModeRecord"| egrep "fps=$fps" | sed -n 's/.*id=//g;s/,.*//g;$p')"
+		DisplayModeRecord_id="$(echo "$DisplayModeRecord" | egrep "fps=$fps" | egrep -v '=\[\]' | sed -n 's/.*id=//g;s/,.*//g;1p')"
 		if [ -n "$DisplayModeRecord_id" ]; then
 			DisplayModeRecord_id="$(( $DisplayModeRecord_id - 1 ))"
 			if [ "$DisplayModeRecord_id" != "-1" ]; then
@@ -341,7 +334,7 @@ fps_recovery() {
 		fps="$(echo "$config_conf" | egrep '^fps=' | sed -n 's/fps=//g;$p' | cut -d ' ' -f '2')"
 		if [ -n "$fps" -a "$fps" != "0" ]; then
 			DisplayModeRecord="$(dumpsys display | egrep 'DisplayModeRecord')"
-			DisplayModeRecord_id="$(echo "$DisplayModeRecord"| egrep "fps=$fps" | sed -n 's/.*id=//g;s/,.*//g;$p')"
+			DisplayModeRecord_id="$(echo "$DisplayModeRecord" | egrep "fps=$fps" | egrep -v '=\[\]' | sed -n 's/.*id=//g;s/,.*//g;1p')"
 			if [ -n "$DisplayModeRecord_id" ]; then
 				DisplayModeRecord_id="$(( $DisplayModeRecord_id - 1 ))"
 				if [ "$DisplayModeRecord_id" != "-1" ]; then
@@ -455,5 +448,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022092500
+#version=2022092600
 # ##

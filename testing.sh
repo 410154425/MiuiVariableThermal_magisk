@@ -74,8 +74,8 @@ until [ "$thermal_normal_n" = "0" ] ; do
 done
 echo "$thermal_etc"
 echo --------- MIUI云温控 ----------
-thermal_normal="$(cat "$MODDIR/thermal_list")"
-thermal_normal_n="$(echo "$thermal_normal" | wc -l)"
+thermal_normal="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
+thermal_normal_n="$(echo "$thermal_normal" | egrep 'thermal\-' | wc -l)"
 until [ "$thermal_normal_n" = "0" ] ; do
 	thermal_normal_p="$(echo "$thermal_normal" | sed -n "${thermal_normal_n}p")"
 	thermal_normal_c="$(cat "/data/vendor/thermal/config/$thermal_normal_p" | wc -c)"
@@ -84,7 +84,7 @@ until [ "$thermal_normal_n" = "0" ] ; do
 done
 echo "$thermal_config"
 echo --------- 设备信息 ----------
-echo "serialno.$(getprop ro.serialno | sed -n 's/ //g;$p'),release.$(getprop ro.build.version.release | sed -n 's/ //g;$p'),sdk.$(getprop ro.build.version.sdk | sed -n 's/ //g;$p'),brand.$(getprop ro.product.brand | sed -n 's/ //g;$p'),model.$(getprop ro.product.model | sed -n 's/ //g;$p')"
+echo "release.$(getprop ro.build.version.release | sed -n 's/ //g;$p'),sdk.$(getprop ro.build.version.sdk | sed -n 's/ //g;$p'),brand.$(getprop ro.product.brand | sed -n 's/ //g;$p'),model.$(getprop ro.product.model | sed -n 's/ //g;$p'),cpu.$(cat '/proc/cpuinfo' | egrep 'Hardware' | sed -n 's/.*://g;s/ //g;$p')"
 if [ -f "$MODDIR/disable" -o "$global_switch" = "0" ]; then
 	echo --------- 模块已关闭 ----------
 	exit 0
