@@ -1,4 +1,7 @@
 MODDIR=${0%/*}
+if [ ! -f "$MODDIR/mode" ]; then
+	exit 0
+fi
 module_version="$(cat "$MODDIR/module.prop" | egrep 'version=' | sed -n 's/.*version=//g;s/(.*//g;$p')"
 Host_version="$(cat "$MODDIR/mvt.sh" | egrep '^#version=' | sed -n 's/.*version=//g;$p')"
 update_curl="http://z23r562938.iask.in/MVT_magisk"
