@@ -8,77 +8,86 @@ state="$(cat "$MODDIR/module.prop" | egrep '^description=' | sed -n 's/.*=\[//g;
 module_version="$(cat "$MODDIR/module.prop" | egrep 'version=' | sed -n 's/.*version=//g;$p')"
 module_versionCode="$(cat "$MODDIR/module.prop" | egrep 'versionCode=' | sed -n 's/.*versionCode=//g;$p')"
 global_switch="$(echo "$config_conf" | egrep '^global_switch=' | sed -n 's/global_switch=//g;$p')"
-fps="$(echo "$config_conf" | egrep '^fps=')"
 echo --------- 版本 ----------
 echo "$module_version ,$module_versionCode"
 echo --------- 适配 ----------
 dumpsys activity | egrep 'mResume'
 dumpsys window | egrep 'mCurrentFocus'
 echo "$state"
-getprop vendor.sys.thermal.data.path
 which_thermal="$(which -a 'mi_thermald')"
-cat_thermal="$(cat "$which_thermal" | wc -c)"
+if [ -f "$which_thermal" ]; then
+	cat_thermal="$(cat "$which_thermal" | wc -c)"
+fi
 pgrep_thermal="$(pgrep 'mi_thermald')"
 echo "$which_thermal $cat_thermal $pgrep_thermal"
-getprop sys.thermal.data.path
 which_thermal="$(which -a 'thermal-engine')"
-cat_thermal="$(cat "$which_thermal" | wc -c)"
+if [ -f "$which_thermal" ]; then
+	cat_thermal="$(cat "$which_thermal" | wc -c)"
+fi
 pgrep_thermal="$(pgrep 'thermal-engine')"
 echo "$which_thermal $cat_thermal $pgrep_thermal"
 if [ -f "/data/vendor/thermal/decrypt.txt" ]; then
 	decrypt_txt="$(cat "/data/vendor/thermal/decrypt.txt" | wc -c)"
-	echo "yes decrypt.txt $decrypt_txt"
+	decrypt="yes,decrypt.txt,$decrypt_txt"
 else
-	echo "no decrypt.txt"
+	decrypt="no,decrypt.txt"
 fi
 if [ -f "/data/vendor/thermal/thermal.dump" ]; then
 	thermal_dump="$(cat "/data/vendor/thermal/thermal.dump" | wc -c)"
-	echo "yes thermal.dump $thermal_dump"
+	dump="yes,thermal.dump,$thermal_dump"
 else
-	echo "no thermal.dump"
+	dump="no,thermal.dump"
 fi
 if [ -f "$MODDIR/thermal_list" ]; then
 	thermal_list="$(cat "$MODDIR/thermal_list" | wc -l)"
-	echo "yes thermal_list $thermal_list"
+	t_list="yes,thermal_list,$thermal_list"
 else
-	echo "no thermal_list"
+	t_list="no,thermal_list"
 fi
-echo "$fps"
+echo "$decrypt $dump $t_list"
 dumpsys_charging="$(dumpsys deviceidle get charging)"
 bypass_supply_mode=0
 if [ -f "$MODDIR/on_bypass" ]; then
 	bypass_supply_mode=1
 fi
 mode="$(cat "$MODDIR/mode")"
+fps="$(echo "$config_conf" | egrep '^fps=')"
+current_max="$(echo "$config_conf" | egrep '^current_max=' | sed -n 's/current_max=//g;$p')"
 thermal_scene="$(echo "$config_conf" | egrep '^thermal_scene=' | sed -n 's/thermal_scene=//g;$p')"
 thermal_charge="$(echo "$config_conf" | egrep '^thermal_charge=' | sed -n 's/thermal_charge=//g;$p')"
 thermal_app="$(echo "$config_conf" | egrep '^thermal_app=' | sed -n 's/thermal_app=//g;$p')"
 current_now="$(cat '/sys/class/power_supply/battery/current_now')"
 battery_level="$(cat '/sys/class/power_supply/battery/capacity')"
+if [ -f "$MODDIR/stop_level" ]; then
+	stop_level="$(cat "$MODDIR/stop_level")"
+fi
 bypass_supply_level="$(echo "$config_conf" | egrep '^bypass_supply_level=' | sed -n 's/bypass_supply_level=//g;$p')"
 battery_temp="$(cat '/sys/class/power_supply/battery/temp' | cut -c '1-2')"
 bypass_supply_temp="$(echo "$config_conf" | egrep '^bypass_supply_temp=' | sed -n 's/bypass_supply_temp=//g;$p')"
 bypass_supply_app="$(echo "$config_conf" | egrep '^bypass_supply_app=' | sed -n 's/bypass_supply_app=//g;$p')"
-echo "当前模式$mode 温控档位$thermal_scene 充电场景$thermal_charge 游戏场景$thermal_app 充电$dumpsys_charging 电流$current_now 手动旁路$bypass_supply_mode 电量$battery_level 电量旁路$bypass_supply_level 温度$battery_temp 温度旁路$bypass_supply_temp 游戏旁路$bypass_supply_app"
+echo "当前模式$mode 温控档位$thermal_scene 充电场景$thermal_charge 游戏场景$thermal_app 刷新率$fps 充电$dumpsys_charging 最大电流$current_max 当前电流$current_now 旁路停留$stop_level 手动旁路$bypass_supply_mode 电量$battery_level 电量旁路$bypass_supply_level 温度$battery_temp 温度旁路$bypass_supply_temp 游戏旁路$bypass_supply_app"
+echo --------- 电流节点 ----------
+battery_current_list="/sys/class/power_supply/battery/constant_charge_current_max /sys/class/power_supply/battery/constant_charge_current /sys/class/power_supply/battery/fast_charge_current /sys/class/power_supply/battery/thermal_input_current /sys/class/power_supply/battery/current_max"
+for i in $battery_current_list ; do
+	if [ -f "$i" ]; then
+		battery_current_data="$(cat "$i")"
+		battery_current_node="$i,$battery_current_data,$battery_current_node"
+	fi
+done
+echo "$battery_current_node"
 echo --------- 系统温控 ----------
 find /system/*/* -name "*thermal*.conf" -o -name "*mi_thermald*" -o -name "*thermal-engine*" > "$MODDIR/testing_list"
 thermal_normal="$(cat "$MODDIR/testing_list")"
-thermal_normal_n="$(echo "$thermal_normal" | wc -l)"
-until [ "$thermal_normal_n" = "0" ] ; do
-	thermal_normal_p="$(echo "$thermal_normal" | sed -n "${thermal_normal_n}p")"
-	thermal_normal_c="$(cat "$thermal_normal_p" | wc -c)"
-	thermal_etc="$thermal_normal_p $thermal_normal_c , $thermal_etc"
-	thermal_normal_n="$(( $thermal_normal_n - 1 ))"
+for i in $thermal_normal ; do
+	thermal_normal_c="$(cat "$i" | wc -c)"
+	thermal_etc="$i $thermal_normal_c , $thermal_etc"
 done
 echo "$thermal_etc"
 echo --------- MIUI云温控 ----------
 thermal_normal="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
-thermal_normal_n="$(echo "$thermal_normal" | egrep 'thermal\-' | wc -l)"
-until [ "$thermal_normal_n" = "0" ] ; do
-	thermal_normal_p="$(echo "$thermal_normal" | sed -n "${thermal_normal_n}p")"
-	thermal_normal_c="$(cat "/data/vendor/thermal/config/$thermal_normal_p" | wc -c)"
-	thermal_config="$thermal_normal_p $thermal_normal_c , $thermal_config"
-	thermal_normal_n="$(( $thermal_normal_n - 1 ))"
+for i in $thermal_normal ; do
+	thermal_normal_c="$(cat "/data/vendor/thermal/config/$i" | wc -c)"
+	thermal_config="$i $thermal_normal_c , $thermal_config"
 done
 echo "$thermal_config"
 echo --------- 设备信息 ----------
