@@ -5,6 +5,13 @@ if [ "$log_n" -gt "30" ]; then
 	sed -i '1,5d' "$MODDIR/log.log" > /dev/null 2>&1
 fi
 config_conf="$(cat "$MODDIR/config.conf" | egrep -v '^#')"
+default_max="22000000"
+if [ ! -f "$MODDIR/thermal_list" ]; then
+	find /system/vendor/etc -name "thermal*.conf" | egrep -i -v '\-map' | sed -n 's/\/system\/vendor\/etc\///g;p' | egrep -v '\/' > "$MODDIR/thermal_list"
+	rm -f "$MODDIR/mode" > /dev/null 2>&1
+	sed -i 's/\[.*\]/\[ 文件thermal_list丢失，正在创建，稍等 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+	exit 0
+fi
 chattr -R -i -a '/data/vendor/thermal/'
 if [ ! -d '/data/vendor/thermal/config/' ]; then
 	mkdir -p '/data/vendor/thermal/config/' > /dev/null 2>&1
@@ -76,13 +83,32 @@ current_log() {
 		current_now="$(cat '/sys/class/power_supply/battery/current_now')"
 		battery_temp="$(cat '/sys/class/power_supply/battery/temp' | cut -c '1-2')"
 		if [ "$stop_level" -gt "0" ]; then
-			echo "$(date +%F_%T) 电量$battery_level 电流$current_now 温度$battery_temp 旁路$stop_level" >> "$MODDIR/current.txt"
+			echo "$(date +%F_%T) 电量$battery_level 限制电流$current_max 实时电流$current_now 温度$battery_temp 旁路$stop_level" >> "$MODDIR/current.txt"
 		else
-			echo "$(date +%F_%T) 电量$battery_level 电流$current_now 温度$battery_temp" >> "$MODDIR/current.txt"
+			echo "$(date +%F_%T) 电量$battery_level 限制电流$current_max 实时电流$current_now 温度$battery_temp" >> "$MODDIR/current.txt"
 		fi
 	fi
 }
 change_current() {
+	if [ "$current_max" = "0" ]; then
+		now_current="$(cat '/sys/class/power_supply/battery/current_now')"
+		echo "$now_current" >> "$MODDIR/now_current"
+		now_current_n="$(cat "$MODDIR/now_current" | wc -l)"
+		if [ "$now_current_n" -gt "15" ]; then
+			sed -i '1,5d' "$MODDIR/now_current" > /dev/null 2>&1
+		fi
+		now_current_e="$(cat "$MODDIR/now_current" | egrep '\-' | wc -l)"
+		if [ "$now_current_e" -ge "4" ]; then
+			current_max="100000"
+		else
+			current_max="0"
+		fi
+	else
+		if [ -f "$MODDIR/now_current" ]; then
+			rm -f "$MODDIR/now_current" > /dev/null 2>&1
+		fi
+	fi
+	current_bridge="1000000"
 	battery_current_list="/sys/class/power_supply/battery/constant_charge_current_max /sys/class/power_supply/battery/constant_charge_current /sys/class/power_supply/battery/fast_charge_current /sys/class/power_supply/battery/thermal_input_current /sys/class/power_supply/battery/current_max"
 	for i in $battery_current_list ; do
 		if [ -f "$i" ]; then
@@ -90,13 +116,13 @@ change_current() {
 			battery_current_data="$(cat "$i")"
 			if [ -n "$battery_current_data" -a "$battery_current_data" != "$current_max" ]; then
 				if [ "$battery_current_data" -ge "0" ]; then
-					if [ "$current_max" -ge "1000000" -o "$battery_current_data" -le "1000000" ]; then
+					if [ "$current_max" -ge "$current_bridge" -o "$battery_current_data" -le "$current_bridge" ]; then
 						echo "$current_max" > "$i"
 					else
-						echo "1000000" > "$i"
+						echo "$current_bridge" > "$i"
 					fi
 				else
-					echo "1000000" > "$i"
+					echo "$current_bridge" > "$i"
 				fi
 			fi
 		fi
@@ -106,20 +132,16 @@ bypass_supply_current() {
 	stop_level="$(cat "$MODDIR/stop_level")"
 	battery_level="$(cat '/sys/class/power_supply/battery/capacity')"
 	if [ "$battery_level" -gt "0" ]; then
-		if [ "$stop_level" -gt "0" ]; then
-			if [ "$battery_level" -ge "$stop_level" ]; then
-				current_max="100000"
-			else
-				current_max="500000"
-			fi
-		else
+		until [ "$stop_level" -gt "0" ]; do
 			stop_level="$battery_level"
 			echo "$stop_level" > "$MODDIR/stop_level"
-			if [ "$battery_level" -ge "$stop_level" ]; then
-				current_max="100000"
-			else
-				current_max="500000"
-			fi
+		done
+		if [ "$battery_level" -gt "$stop_level" -o "$battery_level" = "100" ]; then
+			current_max="0"
+		elif [ "$battery_level" = "$stop_level" ]; then
+			current_max="100000"
+		else
+			current_max="500000"
 		fi
 		change_current
 		current_log
@@ -128,10 +150,10 @@ bypass_supply_current() {
 stop_current() {
 	if [ -f "$MODDIR/stop_level" ]; then
 		current_max="$(echo "$config_conf" | egrep '^current_max=' | sed -n 's/current_max=//g;$p')"
-		if [ -n "$current_max" -a "$current_max" -gt "0" ]; then
+		if [ -n "$current_max" -a "$current_max" -ge "0" ]; then
 			change_current
 		else
-			current_max="22000000"
+			current_max="$default_max"
 			change_current
 		fi
 		rm -f "$MODDIR/stop_level" > /dev/null 2>&1
@@ -226,10 +248,10 @@ bypass_supply_conf() {
 		exit 0
 	else
 		current_max="$(echo "$config_conf" | egrep '^current_max=' | sed -n 's/current_max=//g;$p')"
-		if [ -n "$current_max" -a "$current_max" -gt "0" ]; then
+		if [ -n "$current_max" -a "$current_max" -ge "0" ]; then
 			change_current
 		else
-			current_max="22000000"
+			current_max="$default_max"
 			change_current
 		fi
 		if [ -f "$MODDIR/stop_level" ]; then
@@ -413,7 +435,7 @@ global_switch="$(echo "$config_conf" | egrep '^global_switch=' | sed -n 's/globa
 if [ -f "$MODDIR/disable" -o "$global_switch" = "0" ]; then
 	mode="$(cat "$MODDIR/mode")"
 	if [ "$mode" != 'stop' ]; then
-		current_max="22000000"
+		current_max="$default_max"
 		change_current
 		thermal_conf
 		delete_conf
@@ -518,5 +540,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022092800
+#version=2022093000
 # ##

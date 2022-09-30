@@ -1,4 +1,6 @@
-until [ -d "${0%/*}/" ] ; do
+until [ -f "${0%/*}/mvt.sh" ]; do
+	rm -f "${0%/*}/mode" > /dev/null 2>&1
+	sed -i 's/\[.*\]/\[ 文件mvt.sh丢失，请重新安装模块重启 \]/g' "${0%/*}/module.prop" > /dev/null 2>&1
 	sleep 5
 done
 sleep 5
@@ -17,13 +19,16 @@ echo "am start -n com.tencent.mm/.plugin.webview.ui.tools.WebViewUI -d https://p
 echo "echo \"\"" >> "$MODDIR/.投币捐赠.sh"
 echo "echo \"正在跳转MIUI动态温控捐赠页面，请稍等。。。\"" >> "$MODDIR/.投币捐赠.sh"
 chmod 0755 "$MODDIR/.投币捐赠.sh"
-rm -f "$MODDIR/mode" > /dev/null 2>&1
-sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则可能系统不支持MIUI云温控，也可能被第三方屏蔽或删除了，请自行排查重启后再试 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
-until [ -d '/data/vendor/thermal/' ] ; do
+until [ -d '/data/vendor/thermal/' ]; do
+	rm -f "$MODDIR/mode" > /dev/null 2>&1
+	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则可能系统不支持MIUI云温控，也可能被第三方屏蔽或删除了，请自行排查重启后再试 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+	sleep 5
+done
+rm -f "$MODDIR/thermal_list" > /dev/null 2>&1
+until [ -f "$MODDIR/thermal_list" ]; do
+	find /system/vendor/etc -name "thermal*.conf" | egrep -i -v '\-map' | sed -n 's/\/system\/vendor\/etc\///g;p' | egrep -v '\/' > "$MODDIR/thermal_list"
 	sleep 1
 done
-find /system/vendor/etc -name "thermal*.conf" | egrep -i -v '\-map' | sed -n 's/\/system\/vendor\/etc\///g;p' | egrep -v '\/' > "$MODDIR/thermal_list"
-sleep 1
 thermal_normal="$(cat "$MODDIR/thermal_list")"
 thermal_normal_n="$(echo "$thermal_normal" | egrep 'thermal\-' | wc -l)"
 if [ "$thermal_normal_n" = "0" ]; then
@@ -47,10 +52,10 @@ delete_conf() {
 	chmod -R 0771 '/data/vendor/thermal/' > /dev/null 2>&1
 }
 rm -f "$MODDIR/mode" > /dev/null 2>&1
+sed -i 's/\[.*\]/\[ 当前温控：- \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 delete_conf
 up=1
-while :;
-do
+while true ; do
 if [ "$up" = "20" -o "$up" = "7200" ]; then
 	"$MODDIR/up" > /dev/null 2>&1 &
 	up=21
