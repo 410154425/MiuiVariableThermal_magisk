@@ -26,25 +26,29 @@ until [ -d '/data/vendor/thermal/' ]; do
 done
 rm -f "$MODDIR/thermal_list" > /dev/null 2>&1
 until [ -f "$MODDIR/thermal_list" ]; do
-	find /system/vendor/etc -name "thermal*.conf" | egrep -i -v '\-map' | sed -n 's/\/system\/vendor\/etc\///g;p' | egrep -v '\/' > "$MODDIR/thermal_list"
+	find /system/vendor/etc -name "thermal*.conf" | sed -n 's/\/system\/vendor\/etc\///g;p' | egrep -v '\/' > "$MODDIR/thermal_list"
 	sleep 1
 done
 thermal_normal="$(cat "$MODDIR/thermal_list")"
-thermal_normal_n="$(echo "$thermal_normal" | egrep 'thermal\-' | wc -l)"
+thermal_normal_n="$(echo "$thermal_normal" | egrep 'thermal\-' | egrep -i -v '\-map' | wc -l)"
 if [ "$thermal_normal_n" = "0" ]; then
 	rm -f "$MODDIR/mode" > /dev/null 2>&1
 	sed -i 's/\[.*\]/\[ 没找到MIUI系统默认的温控文件，也可能系统不支持MIUI云温控，请排查恢复后再使用 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 	exit 0
 fi
-thermal_normal_n="$(echo "$thermal_normal" | egrep 'thermal')"
-for i in $thermal_normal_n ; do
-	thermal_normal_c="$(cat "/system/vendor/etc/$i" | wc -c)"
-	if [ -f "/system/vendor/etc/$i" -a "$thermal_normal_c" -lt "20" ]; then
-		rm -f "$MODDIR/mode" > /dev/null 2>&1
-		sed -i 's/\[.*\]/\[ MIUI系统温控文件可能被其它模块用空白文件屏蔽了，请排查温控相关的模块冲突，重启再使用 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
-		exit 0
-	fi
-done
+map_c="$(cat '/system/vendor/etc/thermal-map.conf' | wc -c)"
+normal_c="$(cat '/system/vendor/etc/thermal-normal.conf' | wc -c)"
+if [ "$map_c" -lt "20" -o "$normal_c" -lt "20" ]; then
+	thermal_normal_n="$(echo "$thermal_normal" | egrep 'thermal')"
+	for i in $thermal_normal_n ; do
+		thermal_normal_c="$(cat "/system/vendor/etc/$i" | wc -c)"
+		if [ -f "/system/vendor/etc/$i" -a "$thermal_normal_c" -lt "20" ]; then
+			rm -f "$MODDIR/mode" > /dev/null 2>&1
+			sed -i 's/\[.*\]/\[ MIUI系统温控文件可能被其它模块用空白文件屏蔽了，请排查温控相关的模块冲突，重启再使用 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+			exit 0
+		fi
+	done
+fi
 delete_conf() {
 	chattr -R -i -a '/data/vendor/thermal/'
 	rm -rf '/data/vendor/thermal/config/' > /dev/null 2>&1

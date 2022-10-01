@@ -76,15 +76,14 @@ for i in $battery_current_list ; do
 done
 echo "$battery_current_node"
 echo --------- 系统温控 ----------
-find /system/*/* -name "*thermal*.conf" -o -name "*mi_thermald*" -o -name "*thermal-engine*" > "$MODDIR/testing_list"
-thermal_normal="$(cat "$MODDIR/testing_list")"
+thermal_normal="$(find /system/*/* -name "*thermal*.conf" -o -name "*mi_thermald*" -o -name "*thermal-engine*")"
 for i in $thermal_normal ; do
 	thermal_normal_c="$(cat "$i" | wc -c)"
 	thermal_etc="$i $thermal_normal_c , $thermal_etc"
 done
 echo "$thermal_etc"
 echo --------- MIUI云温控 ----------
-thermal_normal="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
+thermal_normal="$(ls -A /data/vendor/thermal/config)"
 for i in $thermal_normal ; do
 	thermal_normal_c="$(cat "/data/vendor/thermal/config/$i" | wc -c)"
 	thermal_config="$i $thermal_normal_c , $thermal_config"

@@ -7,7 +7,7 @@ fi
 config_conf="$(cat "$MODDIR/config.conf" | egrep -v '^#')"
 default_max="22000000"
 if [ ! -f "$MODDIR/thermal_list" ]; then
-	find /system/vendor/etc -name "thermal*.conf" | egrep -i -v '\-map' | sed -n 's/\/system\/vendor\/etc\///g;p' | egrep -v '\/' > "$MODDIR/thermal_list"
+	find /system/vendor/etc -name "thermal*.conf" | sed -n 's/\/system\/vendor\/etc\///g;p' | egrep -v '\/' > "$MODDIR/thermal_list"
 	rm -f "$MODDIR/mode" > /dev/null 2>&1
 	sed -i 's/\[.*\]/\[ 文件thermal_list丢失，正在创建，稍等 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 	exit 0
@@ -83,50 +83,67 @@ current_log() {
 		current_now="$(cat '/sys/class/power_supply/battery/current_now')"
 		battery_temp="$(cat '/sys/class/power_supply/battery/temp' | cut -c '1-2')"
 		if [ "$stop_level" -gt "0" ]; then
-			echo "$(date +%F_%T) 电量$battery_level 限制电流$current_max 实时电流$current_now 温度$battery_temp 旁路$stop_level" >> "$MODDIR/current.txt"
+			echo "$(date +%F_%T) 电量$battery_level 电流上限$current_max 当前电流$current_now 温度$battery_temp 旁路$stop_level" >> "$MODDIR/current.txt"
 		else
-			echo "$(date +%F_%T) 电量$battery_level 限制电流$current_max 实时电流$current_now 温度$battery_temp" >> "$MODDIR/current.txt"
+			echo "$(date +%F_%T) 电量$battery_level 电流上限$current_max 当前电流$current_now 温度$battery_temp" >> "$MODDIR/current.txt"
 		fi
 	fi
 }
 change_current() {
-	if [ "$current_max" = "0" ]; then
-		now_current="$(cat '/sys/class/power_supply/battery/current_now')"
-		echo "$now_current" >> "$MODDIR/now_current"
-		now_current_n="$(cat "$MODDIR/now_current" | wc -l)"
-		if [ "$now_current_n" -gt "15" ]; then
-			sed -i '1,5d' "$MODDIR/now_current" > /dev/null 2>&1
-		fi
-		now_current_e="$(cat "$MODDIR/now_current" | egrep '\-' | wc -l)"
-		if [ "$now_current_e" -ge "4" ]; then
-			current_max="100000"
-		else
-			current_max="0"
-		fi
-	else
-		if [ -f "$MODDIR/now_current" ]; then
-			rm -f "$MODDIR/now_current" > /dev/null 2>&1
-		fi
-	fi
 	current_bridge="1000000"
-	battery_current_list="/sys/class/power_supply/battery/constant_charge_current_max /sys/class/power_supply/battery/constant_charge_current /sys/class/power_supply/battery/fast_charge_current /sys/class/power_supply/battery/thermal_input_current /sys/class/power_supply/battery/current_max"
-	for i in $battery_current_list ; do
-		if [ -f "$i" ]; then
-			chmod 0644 "$i"
-			battery_current_data="$(cat "$i")"
-			if [ -n "$battery_current_data" -a "$battery_current_data" != "$current_max" ]; then
-				if [ "$battery_current_data" -ge "0" ]; then
-					if [ "$current_max" -ge "$current_bridge" -o "$battery_current_data" -le "$current_bridge" ]; then
-						echo "$current_max" > "$i"
+	now_current="$(cat '/sys/class/power_supply/battery/current_now')"
+	now_current_value="$(echo "$now_current" | sed -n 's/\-//g;$p')"
+	if [ "$now_current_value" -ge "0" ]; then
+		if [ "$current_max" -gt "$current_bridge" ]; then
+			current_bridge_max="$current_bridge"
+			now_current_value="$(( $now_current_value + $current_bridge ))"
+			until [ "$current_bridge_max" -gt "$now_current_value" ]; do
+				current_bridge_max="$(( $current_bridge_max + $current_bridge ))"
+			done
+			if [ "$current_bridge_max" -lt "$current_max" ]; then
+				current_max="$current_bridge_max"
+			fi
+		else
+			if [ "$now_current_value" -gt "2000000" ]; then
+				current_max="$current_bridge"
+			fi
+		fi
+		if [ "$current_max" = "0" ]; then
+			echo "$now_current" >> "$MODDIR/now_current"
+			now_current_n="$(cat "$MODDIR/now_current" | wc -l)"
+			if [ "$now_current_n" -gt "15" ]; then
+				sed -i '1,5d' "$MODDIR/now_current" > /dev/null 2>&1
+			fi
+			now_current_e="$(cat "$MODDIR/now_current" | egrep '\-' | wc -l)"
+			if [ "$now_current_e" -ge "4" ]; then
+				current_max="100000"
+			else
+				current_max="0"
+			fi
+		else
+			if [ -f "$MODDIR/now_current" ]; then
+				rm -f "$MODDIR/now_current" > /dev/null 2>&1
+			fi
+		fi
+		battery_current_list="/sys/class/power_supply/battery/constant_charge_current_max /sys/class/power_supply/battery/constant_charge_current /sys/class/power_supply/battery/fast_charge_current /sys/class/power_supply/battery/thermal_input_current /sys/class/power_supply/battery/current_max"
+		for i in $battery_current_list ; do
+			if [ -f "$i" ]; then
+				chmod 0644 "$i"
+				battery_current_data="$(cat "$i")"
+				if [ -n "$battery_current_data" -a "$battery_current_data" != "$current_max" ]; then
+					if [ "$battery_current_data" -ge "0" ]; then
+						if [ "$current_max" -ge "$current_bridge" -o "$battery_current_data" -le "$current_bridge" ]; then
+							echo "$current_max" > "$i"
+						else
+							echo "$current_bridge" > "$i"
+						fi
 					else
 						echo "$current_bridge" > "$i"
 					fi
-				else
-					echo "$current_bridge" > "$i"
 				fi
 			fi
-		fi
-	done
+		done
+	fi
 }
 bypass_supply_current() {
 	stop_level="$(cat "$MODDIR/stop_level")"
@@ -149,23 +166,25 @@ bypass_supply_current() {
 }
 stop_current() {
 	if [ -f "$MODDIR/stop_level" ]; then
-		current_max="$(echo "$config_conf" | egrep '^current_max=' | sed -n 's/current_max=//g;$p')"
-		if [ -n "$current_max" -a "$current_max" -ge "0" ]; then
-			change_current
-		else
-			current_max="$default_max"
-			change_current
-		fi
 		rm -f "$MODDIR/stop_level" > /dev/null 2>&1
 	fi
 }
 bypass_supply_md5() {
 	bypass_supply_current
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-' | egrep -i -v '\-map')"
 	for i in $thermal_list ; do
 		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
 		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$md5_bypass" ]; then
 			cp "$MODDIR/t_bypass" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
+			log_log=1
+		fi
+	done
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-' | egrep -i '\-map')"
+	for i in $thermal_list ; do
+		thermal_vendor_md5="$(md5sum "/system/vendor/etc/$i" | cut -d ' ' -f '1')"
+		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
+		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$thermal_vendor_md5" ]; then
+			cp "/system/vendor/etc/$i" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
 			log_log=1
 		fi
 	done
@@ -254,18 +273,25 @@ bypass_supply_conf() {
 			current_max="$default_max"
 			change_current
 		fi
-		if [ -f "$MODDIR/stop_level" ]; then
-			rm -f "$MODDIR/stop_level" > /dev/null 2>&1
-		fi
+		stop_current
 		current_log
 	fi
 }
 t_blank_conf() {
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-' | egrep -i -v '\-map')"
 	for i in $thermal_list ; do
 		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
 		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$md5_blank" ]; then
 			cp "$MODDIR/t_blank" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
+			log_log=1
+		fi
+	done
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-' | egrep -i '\-map')"
+	for i in $thermal_list ; do
+		thermal_vendor_md5="$(md5sum "/system/vendor/etc/$i" | cut -d ' ' -f '1')"
+		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
+		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$thermal_vendor_md5" ]; then
+			cp "/system/vendor/etc/$i" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
 			log_log=1
 		fi
 	done
@@ -279,11 +305,20 @@ t_blank_conf() {
 }
 thermal_scene_conf() {
 	thermal_scene_md5="$(md5sum "$MODDIR/thermal/$thermal_scene/thermal-scene.conf" | cut -d ' ' -f '1')"
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-' | egrep -i -v '\-map')"
 	for i in $thermal_list ; do
 		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
 		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$thermal_scene_md5" ]; then
 			cp "$MODDIR/thermal/$thermal_scene/thermal-scene.conf" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
+			log_log=1
+		fi
+	done
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-' | egrep -i '\-map')"
+	for i in $thermal_list ; do
+		thermal_vendor_md5="$(md5sum "/system/vendor/etc/$i" | cut -d ' ' -f '1')"
+		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
+		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$thermal_vendor_md5" ]; then
+			cp "/system/vendor/etc/$i" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
 			log_log=1
 		fi
 	done
@@ -323,11 +358,20 @@ thermal_scene_conf() {
 }
 thermal_app_conf() {
 	thermal_app_md5="$(md5sum "$MODDIR/thermal/thermal-app.conf" | cut -d ' ' -f '1')"
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-' | egrep -i -v '\-map')"
 	for i in $thermal_list ; do
 		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
 		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$thermal_app_md5" ]; then
 			cp "$MODDIR/thermal/thermal-app.conf" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
+			log_log=1
+		fi
+	done
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-' | egrep -i '\-map')"
+	for i in $thermal_list ; do
+		thermal_vendor_md5="$(md5sum "/system/vendor/etc/$i" | cut -d ' ' -f '1')"
+		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
+		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$thermal_vendor_md5" ]; then
+			cp "/system/vendor/etc/$i" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
 			log_log=1
 		fi
 	done
@@ -341,11 +385,20 @@ thermal_app_conf() {
 }
 thermal_charge_conf() {
 	thermal_charge_md5="$(md5sum "$MODDIR/thermal/thermal-charge.conf" | cut -d ' ' -f '1')"
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-' | egrep -i -v '\-map')"
 	for i in $thermal_list ; do
 		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
 		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$thermal_charge_md5" ]; then
 			cp "$MODDIR/thermal/thermal-charge.conf" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
+			log_log=1
+		fi
+	done
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-' | egrep -i '\-map')"
+	for i in $thermal_list ; do
+		thermal_vendor_md5="$(md5sum "/system/vendor/etc/$i" | cut -d ' ' -f '1')"
+		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
+		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$thermal_vendor_md5" ]; then
+			cp "/system/vendor/etc/$i" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
 			log_log=1
 		fi
 	done
@@ -359,11 +412,20 @@ thermal_charge_conf() {
 }
 thermal_default_conf() {
 	thermal_default_md5="$(md5sum "$MODDIR/thermal/thermal-default.conf" | cut -d ' ' -f '1')"
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-' | egrep -i -v '\-map')"
 	for i in $thermal_list ; do
 		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
 		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$thermal_default_md5" ]; then
 			cp "$MODDIR/thermal/thermal-default.conf" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
+			log_log=1
+		fi
+	done
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-' | egrep -i '\-map')"
+	for i in $thermal_list ; do
+		thermal_vendor_md5="$(md5sum "/system/vendor/etc/$i" | cut -d ' ' -f '1')"
+		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
+		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$thermal_vendor_md5" ]; then
+			cp "/system/vendor/etc/$i" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
 			log_log=1
 		fi
 	done
@@ -375,16 +437,18 @@ thermal_default_conf() {
 		echo "$(date +%F_%T) 当前温控：thermal-default.conf" >> "$MODDIR/log.log"
 	fi
 }
+delete_conf() {
+	chattr -R -i -a '/data/vendor/thermal/'
+	rm -rf '/data/vendor/thermal/config/' > /dev/null 2>&1
+	mkdir -p '/data/vendor/thermal/config/' > /dev/null 2>&1
+	chmod -R 0771 '/data/vendor/thermal/' > /dev/null 2>&1
+}
 thermal_conf() {
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep 'thermal\-')"
-	for i in $thermal_list ; do
-		thermal_vendor_md5="$(md5sum "/system/vendor/etc/$i" | cut -d ' ' -f '1')"
-		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
-		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$thermal_vendor_md5" ]; then
-			cp "/system/vendor/etc/$i" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
-			log_log=1
-		fi
-	done
+	thermal_config="$(ls -A /data/vendor/thermal/config)"
+	if [ -n "$thermal_config" ]; then
+		delete_conf
+		log_log=1
+	fi
 	mode="$(cat "$MODDIR/mode")"
 	if [ "$log_log" = "1" -o "$mode" != "1" ]; then
 		start_thermal_program
@@ -392,12 +456,6 @@ thermal_conf() {
 		sed -i 's/\[.*\]/\[ 当前温控：系统默认 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 		echo "$(date +%F_%T) 当前温控：系统默认" >> "$MODDIR/log.log"
 	fi
-}
-delete_conf() {
-	chattr -R -i -a '/data/vendor/thermal/'
-	rm -rf '/data/vendor/thermal/config/' > /dev/null 2>&1
-	mkdir -p '/data/vendor/thermal/config/' > /dev/null 2>&1
-	chmod -R 0771 '/data/vendor/thermal/' > /dev/null 2>&1
 }
 fps_lock() {
 	fps="$(echo "$config_conf" | egrep '^fps=' | sed -n 's/fps=//g;$p' | cut -d ' ' -f '1')"
@@ -435,14 +493,11 @@ global_switch="$(echo "$config_conf" | egrep '^global_switch=' | sed -n 's/globa
 if [ -f "$MODDIR/disable" -o "$global_switch" = "0" ]; then
 	mode="$(cat "$MODDIR/mode")"
 	if [ "$mode" != 'stop' ]; then
-		current_max="$default_max"
-		change_current
+		stop_current
 		thermal_conf
-		delete_conf
 		echo 'stop' > "$MODDIR/mode"
-		sed -i 's/\[.*\]/\[ 模块已关闭 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
-		echo "$(date +%F_%T) 模块已关闭" >> "$MODDIR/log.log"
-		fps_recovery
+		sed -i 's/\[.*\]/\[ 模块已关闭，重启生效 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+		echo "$(date +%F_%T) 模块已关闭，重启生效" >> "$MODDIR/log.log"
 	fi
 	exit 0
 fi
@@ -540,5 +595,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022093000
+#version=2022100100
 # ##
