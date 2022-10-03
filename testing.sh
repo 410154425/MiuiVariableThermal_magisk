@@ -14,18 +14,16 @@ echo --------- 适配 ----------
 dumpsys activity | egrep 'mResume'
 dumpsys window | egrep 'mCurrentFocus'
 echo "$state"
-which_thermal="$(which -a 'mi_thermald')"
-if [ -f "$which_thermal" ]; then
-	cat_thermal="$(cat "$which_thermal" | wc -c)"
-fi
-pgrep_thermal="$(pgrep 'mi_thermald')"
-echo "$which_thermal $cat_thermal $pgrep_thermal"
-which_thermal="$(which -a 'thermal-engine')"
-if [ -f "$which_thermal" ]; then
-	cat_thermal="$(cat "$which_thermal" | wc -c)"
-fi
-pgrep_thermal="$(pgrep 'thermal-engine')"
-echo "$which_thermal $cat_thermal $pgrep_thermal"
+thermal_program="mi_thermald thermal-engine thermal-engine-v2 thermalserviced"
+for i in $thermal_program ; do
+	which_thermal="$(which "$i")"
+	if [ -f "$which_thermal" ]; then
+		cat_thermal="$(cat "$which_thermal" | wc -c)"
+		pgrep_thermal="$(pgrep "$i" | sed -n '1p')"
+		thermal_data="$which_thermal,$cat_thermal,$pgrep_thermal,$thermal_data"
+	fi
+done
+echo "$thermal_data"
 if [ -f "/data/vendor/thermal/decrypt.txt" ]; then
 	decrypt_txt="$(cat "/data/vendor/thermal/decrypt.txt" | wc -c)"
 	decrypt="yes,decrypt.txt,$decrypt_txt"
@@ -76,7 +74,7 @@ for i in $battery_current_list ; do
 done
 echo "$battery_current_node"
 echo --------- 系统温控 ----------
-thermal_normal="$(find /system/*/* -name "*thermal*.conf" -o -name "*mi_thermald*" -o -name "*thermal-engine*")"
+thermal_normal="$(find /system/*/* -type f -iname "*thermal*.conf" -o -type f -iname "*mi_thermald*" -o -type f -iname "*thermal-engine*" -o -type f -iname "*thermalserviced*")"
 for i in $thermal_normal ; do
 	thermal_normal_c="$(cat "$i" | wc -c)"
 	thermal_etc="$i $thermal_normal_c , $thermal_etc"

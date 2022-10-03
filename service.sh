@@ -26,11 +26,11 @@ until [ -d '/data/vendor/thermal/' ]; do
 done
 rm -f "$MODDIR/thermal_list" > /dev/null 2>&1
 until [ -f "$MODDIR/thermal_list" ]; do
-	find /system/vendor/etc -name "thermal*.conf" | sed -n 's/\/system\/vendor\/etc\///g;p' | egrep -v '\/' > "$MODDIR/thermal_list"
+	find /system/vendor/etc -type f -iname "thermal*.conf" | sed -n 's/\/system\/vendor\/etc\///g;p' | egrep -v '\/' > "$MODDIR/thermal_list"
 	sleep 1
 done
 thermal_normal="$(cat "$MODDIR/thermal_list")"
-thermal_normal_n="$(echo "$thermal_normal" | egrep 'thermal\-' | egrep -i -v '\-map' | wc -l)"
+thermal_normal_n="$(echo "$thermal_normal" | egrep -i 'thermal\-' | egrep -i -v '\-map' | wc -l)"
 if [ "$thermal_normal_n" = "0" ]; then
 	rm -f "$MODDIR/mode" > /dev/null 2>&1
 	sed -i 's/\[.*\]/\[ 没找到MIUI系统默认的温控文件，也可能系统不支持MIUI云温控，请排查恢复后再使用 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
@@ -39,7 +39,7 @@ fi
 map_c="$(cat '/system/vendor/etc/thermal-map.conf' | wc -c)"
 normal_c="$(cat '/system/vendor/etc/thermal-normal.conf' | wc -c)"
 if [ "$map_c" -lt "20" -o "$normal_c" -lt "20" ]; then
-	thermal_normal_n="$(echo "$thermal_normal" | egrep 'thermal')"
+	thermal_normal_n="$(echo "$thermal_normal" | egrep -i 'thermal')"
 	for i in $thermal_normal_n ; do
 		thermal_normal_c="$(cat "/system/vendor/etc/$i" | wc -c)"
 		if [ -f "/system/vendor/etc/$i" -a "$thermal_normal_c" -lt "20" ]; then
@@ -56,6 +56,9 @@ delete_conf() {
 	chmod -R 0771 '/data/vendor/thermal/' > /dev/null 2>&1
 }
 rm -f "$MODDIR/mode" > /dev/null 2>&1
+rm -f "$MODDIR/max_c" > /dev/null 2>&1
+rm -f "$MODDIR/stop_level" > /dev/null 2>&1
+rm -f "$MODDIR/now_current" > /dev/null 2>&1
 sed -i 's/\[.*\]/\[ 当前温控：- \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 delete_conf
 up=1
