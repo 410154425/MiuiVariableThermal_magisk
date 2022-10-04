@@ -67,9 +67,9 @@ start_thermal_program() {
 				dump_n="$(( $dump_n - 1 ))"
 			done
 			if [ ! -f '/data/vendor/thermal/thermal.dump' ]; then
-				while :;
-				do
+				while true ; do
 					rm -f "$MODDIR/mode" > /dev/null 2>&1
+					rm -f "$MODDIR/max_c" > /dev/null 2>&1
 					sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则可能系统不支持MIUI云温控，也可能被第三方屏蔽或删除了，请排查温控相关的模块冲突，重启再试 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 					chattr -R -i -a '/data/vendor/thermal/'
 					rm -rf '/data/vendor/thermal/' > /dev/null 2>&1
@@ -79,19 +79,22 @@ start_thermal_program() {
 		fi
 	else
 		rm -f "$MODDIR/mode" > /dev/null 2>&1
+		rm -f "$MODDIR/max_c" > /dev/null 2>&1
 		sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则系统温控程序被屏蔽或删除了，请恢复重启后再使用 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 		exit 0
 	fi
-	mi_thermald_id="$(pgrep 'mi_thermald')"
-	if [ -n "$mi_thermald_id" ]; then
-		for i in $thermal_program ; do
-			if [ "$i" != 'mi_thermald' ]; then
-				which_thermal="$(which "$i")"
-				if [ -f "$which_thermal" ]; then
-					stop "$i" > /dev/null 2>&1
+	if [ "$log_c" = "0" ]; then
+		mi_thermald_id="$(pgrep 'mi_thermald')"
+		if [ -n "$mi_thermald_id" ]; then
+			for i in $thermal_program ; do
+				if [ "$i" != 'mi_thermald' ]; then
+					which_thermal="$(which "$i")"
+					if [ -f "$which_thermal" ]; then
+						stop "$i" > /dev/null 2>&1
+					fi
 				fi
-			fi
-		done
+			done
+		fi
 	fi
 }
 current_log() {
@@ -195,6 +198,7 @@ change_current() {
 			sed -i 's/\[.*\]/\[ 温控切换中，请稍等10秒 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 			echo "$(date +%F_%T) 温控切换中，请稍等10秒" >> "$MODDIR/log.log"
 			sleep 10
+			log_c=0
 		fi
 	fi
 }
@@ -660,5 +664,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022100300
+#version=2022100400
 # ##
