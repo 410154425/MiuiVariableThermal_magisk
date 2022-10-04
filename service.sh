@@ -58,7 +58,7 @@ delete_conf() {
 rm -f "$MODDIR/mode" > /dev/null 2>&1
 rm -f "$MODDIR/max_c" > /dev/null 2>&1
 rm -f "$MODDIR/stop_level" > /dev/null 2>&1
-rm -f "$MODDIR/now_current" > /dev/null 2>&1
+rm -f "$MODDIR/now_c" > /dev/null 2>&1
 sed -i 's/\[.*\]/\[ 当前温控：- \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 delete_conf
 up=1

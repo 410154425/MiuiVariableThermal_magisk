@@ -7,7 +7,13 @@ if [ "$log_n" -gt "30" ]; then
 	sed -i '1,5d' "$MODDIR/log.log" > /dev/null 2>&1
 fi
 config_conf="$(cat "$MODDIR/config.conf" | egrep -v '^#')"
-default_max="22000000"
+current_max="$(echo "$config_conf" | egrep '^current_max=' | sed -n 's/current_max=//g;$p')"
+if [ "$current_max" -ge "1000000" ]; then
+	bypass_max=1
+	default_max="$current_max"
+else
+	bypass_max=0
+fi
 if [ ! -f "$MODDIR/thermal_list" ]; then
 	find /system/vendor/etc -type f -iname "thermal*.conf" | sed -n 's/\/system\/vendor\/etc\///g;p' | egrep -v '\/' > "$MODDIR/thermal_list"
 	rm -f "$MODDIR/mode" > /dev/null 2>&1
@@ -20,7 +26,7 @@ if [ ! -d '/data/vendor/thermal/config/' ]; then
 fi
 chmod -R 0771 '/data/vendor/thermal/' > /dev/null 2>&1
 t_blank_md5="$(md5sum "$MODDIR/t_blank" | cut -d ' ' -f '1')"
-md5_blank="7787e0abdb1f98d5c7fd713fa70a1884"
+md5_blank="80b9569ceda625605735fd791cc540ce"
 if [ "$t_blank_md5" != "$md5_blank" ]; then
 	rm -f "$MODDIR/mode" > /dev/null 2>&1
 	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块t_blank文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
@@ -83,19 +89,6 @@ start_thermal_program() {
 		sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则系统温控程序被屏蔽或删除了，请恢复重启后再使用 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 		exit 0
 	fi
-	if [ "$log_c" = "0" ]; then
-		mi_thermald_id="$(pgrep 'mi_thermald')"
-		if [ -n "$mi_thermald_id" ]; then
-			for i in $thermal_program ; do
-				if [ "$i" != 'mi_thermald' ]; then
-					which_thermal="$(which "$i")"
-					if [ -f "$which_thermal" ]; then
-						stop "$i" > /dev/null 2>&1
-					fi
-				fi
-			done
-		fi
-	fi
 }
 current_log() {
 	current_txt="$(echo "$config_conf" | egrep '^current_txt=' | sed -n 's/current_txt=//g;$p')"
@@ -108,9 +101,9 @@ current_log() {
 		current_now="$(cat '/sys/class/power_supply/battery/current_now')"
 		battery_temp="$(cat '/sys/class/power_supply/battery/temp' | cut -c '1-2')"
 		if [ "$stop_level" -gt "0" ]; then
-			echo "$(date +%F_%T) 电量$battery_level 电流上限$current_max 当前电流$current_now 温度$battery_temp 旁路$stop_level" >> "$MODDIR/current.txt"
+			echo "$(date +%F_%T) 电量$battery_level 档位$thermal_scene 旁辅$current_max 当前电流$current_now 温度$battery_temp 旁停$stop_level" >> "$MODDIR/current.txt"
 		else
-			echo "$(date +%F_%T) 电量$battery_level 电流上限$current_max 当前电流$current_now 温度$battery_temp" >> "$MODDIR/current.txt"
+			echo "$(date +%F_%T) 电量$battery_level 档位$thermal_scene 旁辅$current_max 当前电流$current_now 温度$battery_temp" >> "$MODDIR/current.txt"
 		fi
 	fi
 }
@@ -118,22 +111,20 @@ change_current() {
 	if [ "$current_max" = "0" ]; then
 		now_current="$(cat '/sys/class/power_supply/battery/current_now')"
 		if [ -n "$now_current" ]; then
-			echo "$now_current" >> "$MODDIR/now_current"
-			now_current_n="$(cat "$MODDIR/now_current" | wc -l)"
+			echo "$now_current" >> "$MODDIR/now_c"
+			now_current_n="$(cat "$MODDIR/now_c" | wc -l)"
 			if [ "$now_current_n" -gt "15" ]; then
-				sed -i '1,5d' "$MODDIR/now_current" > /dev/null 2>&1
+				sed -i '1,5d' "$MODDIR/now_c" > /dev/null 2>&1
 			fi
-			now_current_e="$(cat "$MODDIR/now_current" | egrep '\-' | wc -l)"
-			if [ "$now_current_e" -ge "4" ]; then
-				current_max="100000"
+			now_current_e="$(cat "$MODDIR/now_c" | egrep '\-' | wc -l)"
+			if [ "$now_current_e" -ge "3" ]; then
+				current_max="$default_max"
 			else
 				current_max="0"
 			fi
 		fi
 	else
-		if [ -f "$MODDIR/now_current" ]; then
-			rm -f "$MODDIR/now_current" > /dev/null 2>&1
-		fi
+		rm -f "$MODDIR/now_c" > /dev/null 2>&1
 	fi
 	current_log
 	max_c="$(cat "$MODDIR/max_c")"
@@ -171,6 +162,7 @@ change_current() {
 					sed -i 's/\[.*\]/\[ 当前温控：温度-旁路供电 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 					echo "$(date +%F_%T) 当前温控：温度-旁路供电" >> "$MODDIR/log.log"
 				fi
+				sleep 7
 				exit 0
 			elif [ "$bypass_supply_mode" = "2" ]; then
 				if [ "$mode" != "7" ]; then
@@ -178,6 +170,7 @@ change_current() {
 					sed -i 's/\[.*\]/\[ 当前温控：手动-旁路供电 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 					echo "$(date +%F_%T) 当前温控：手动-旁路供电" >> "$MODDIR/log.log"
 				fi
+				sleep 7
 				exit 0
 			elif [ "$bypass_supply_mode" = "3" ]; then
 				if [ "$mode" != "8" ]; then
@@ -185,6 +178,7 @@ change_current() {
 					sed -i 's/\[.*\]/\[ 当前温控：电量-旁路供电 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 					echo "$(date +%F_%T) 当前温控：电量-旁路供电" >> "$MODDIR/log.log"
 				fi
+				sleep 7
 				exit 0
 			elif [ "$bypass_supply_mode" = "4" ]; then
 				if [ "$mode" != "9" ]; then
@@ -192,13 +186,13 @@ change_current() {
 					sed -i 's/\[.*\]/\[ 当前温控：游戏-旁路供电 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 					echo "$(date +%F_%T) 当前温控：游戏-旁路供电" >> "$MODDIR/log.log"
 				fi
+				sleep 7
 				exit 0
 			fi
 			rm -f "$MODDIR/mode" > /dev/null 2>&1
 			sed -i 's/\[.*\]/\[ 温控切换中，请稍等10秒 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 			echo "$(date +%F_%T) 温控切换中，请稍等10秒" >> "$MODDIR/log.log"
 			sleep 10
-			log_c=0
 		fi
 	fi
 }
@@ -212,29 +206,26 @@ bypass_supply_current() {
 		done
 		if [ "$battery_level" -gt "$stop_level" -o "$battery_level" = "100" ]; then
 			current_max="0"
-		else
-			current_max="100000"
 		fi
 		change_current
 	fi
 }
 stop_current() {
-	if [ -f "$MODDIR/stop_level" ]; then
-		current_max="$(echo "$config_conf" | egrep '^current_max=' | sed -n 's/current_max=//g;$p')"
-		if [ -n "$current_max" -a "$current_max" -ge "1000000" ]; then
+	if [ "$bypass_max" = "1" ]; then
+		if [ -f "$MODDIR/stop_level" ]; then
 			change_current
-		else
-			current_max="$default_max"
-			change_current
+			rm -f "$MODDIR/stop_level" > /dev/null 2>&1
 		fi
-		rm -f "$MODDIR/stop_level" > /dev/null 2>&1
-	fi
-	if [ -f "$MODDIR/max_c" ]; then
 		rm -f "$MODDIR/max_c" > /dev/null 2>&1
 	fi
 }
 bypass_supply_md5() {
-	bypass_supply_current
+	if [ "$bypass_max" = "1" ]; then
+		bypass_supply_current
+	else
+		current_max="-"
+		current_log
+	fi
 	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i -v '\-map')"
 	for i in $thermal_list ; do
 		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
@@ -332,15 +323,14 @@ bypass_supply_conf() {
 		fi
 		exit 0
 	else
-		current_max="$(echo "$config_conf" | egrep '^current_max=' | sed -n 's/current_max=//g;$p')"
-		if [ -n "$current_max" -a "$current_max" -ge "1000000" ]; then
+		if [ "$bypass_max" = "1" ]; then
 			change_current
+			if [ -f "$MODDIR/stop_level" ]; then
+				rm -f "$MODDIR/stop_level" > /dev/null 2>&1
+			fi
 		else
-			current_max="$default_max"
-			change_current
-		fi
-		if [ -f "$MODDIR/stop_level" ]; then
-			rm -f "$MODDIR/stop_level" > /dev/null 2>&1
+			current_max="-"
+			current_log
 		fi
 	fi
 }
@@ -365,6 +355,12 @@ t_blank_conf() {
 	mode="$(cat "$MODDIR/mode")"
 	if [ "$log_log" = "1" -o "$mode" != "5" ]; then
 		start_thermal_program
+		for i in $thermal_program ; do
+			which_thermal="$(which "$i")"
+			if [ -f "$which_thermal" ]; then
+				stop "$i" > /dev/null 2>&1
+			fi
+		done
 		echo "5" > "$MODDIR/mode"
 		sed -i 's/\[.*\]/\[ 当前温控：零档-无限制 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 		echo "$(date +%F_%T) 当前温控：零档-无限制" >> "$MODDIR/log.log"
@@ -562,7 +558,7 @@ if [ -f "$MODDIR/disable" -o "$global_switch" = "0" ]; then
 	if [ "$mode" != 'stop' ]; then
 		rm -f "$MODDIR/max_c" > /dev/null 2>&1
 		rm -f "$MODDIR/stop_level" > /dev/null 2>&1
-		rm -f "$MODDIR/now_current" > /dev/null 2>&1
+		rm -f "$MODDIR/now_c" > /dev/null 2>&1
 		thermal_conf
 		echo 'stop' > "$MODDIR/mode"
 		sed -i 's/\[.*\]/\[ 模块已关闭，重启生效 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
@@ -664,5 +660,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022100400
+#version=2022100500
 # ##
