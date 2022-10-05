@@ -1,7 +1,7 @@
 id=MiuiVariableThermal
 name=MIUI动态温控
-version=20221005
-versionCode=2022100500
+version=20221006
+versionCode=2022100600
 author=top大佬(酷安)
 description=[ 当前温控：未知 ] 利用MIUI云温控，使充电场景、游戏场景用不同档位的快充和性能无限制，其它场景自动恢复默认温控，可配置MIUI旁路供电，可配置锁定屏幕刷新率，配置路径：/data/adb/modules/MiuiVariableThermal/config.conf，日志log.log。 
 # ##

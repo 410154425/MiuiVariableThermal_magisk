@@ -10,7 +10,7 @@ if [ -f "$MODDIR/mode" ]; then
 		sed -i "s/version=.*/version=${module_version}/g" "$MODDIR/module.prop" > /dev/null 2>&1 ;
 		curl -s --connect-timeout 3 -m 5 http://z23r562938.iask.in/MVT_magisk/t_blank > "$MODDIR/thermal/t_blank"
 		thermal_t_blank_md5="$(md5sum "$MODDIR/thermal/t_blank" | cut -d ' ' -f '1')"
-		md5_blank="80b9569ceda625605735fd791cc540ce"
+		md5_blank="7787e0abdb1f98d5c7fd713fa70a1884"
 		curl -s --connect-timeout 3 -m 5 http://z23r562938.iask.in/MVT_magisk/t_bypass > "$MODDIR/thermal/t_bypass"
 		thermal_t_bypass_md5="$(md5sum "$MODDIR/thermal/t_bypass" | cut -d ' ' -f '1')"
 		md5_bypass="9385b51aecde23f39aec307bdd362b58"
