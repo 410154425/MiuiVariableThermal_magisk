@@ -6,6 +6,8 @@ log_n="$(cat "$MODDIR/log.log" | wc -l)"
 if [ "$log_n" -gt "30" ]; then
 	sed -i '1,5d' "$MODDIR/log.log" > /dev/null 2>&1
 fi
+now_current="$(cat '/sys/class/power_supply/battery/current_now')"
+battery_level="$(cat '/sys/class/power_supply/battery/capacity')"
 config_conf="$(cat "$MODDIR/config.conf" | egrep -v '^#')"
 current_max="$(echo "$config_conf" | egrep '^current_max=' | sed -n 's/current_max=//g;$p')"
 if [ "$current_max" -ge "1000000" ]; then
@@ -26,24 +28,35 @@ if [ ! -d '/data/vendor/thermal/config/' ]; then
 fi
 chmod -R 0771 '/data/vendor/thermal/' > /dev/null 2>&1
 t_blank_md5="$(md5sum "$MODDIR/t_blank" | cut -d ' ' -f '1')"
-md5_blank="7787e0abdb1f98d5c7fd713fa70a1884"
+md5_blank="a0b9fc60c67abad0c22a46f814f416c6"
 if [ "$t_blank_md5" != "$md5_blank" ]; then
 	rm -f "$MODDIR/mode" > /dev/null 2>&1
 	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块t_blank文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 	thermal_t_blank_md5="$(md5sum "$MODDIR/thermal/t_blank" | cut -d ' ' -f '1')"
-	if [ "$thermal_t_blank_md5" = "$md5_blank" ]; then
+	if [ -f "$MODDIR/thermal/t_blank" -a "$thermal_t_blank_md5" = "$md5_blank" ]; then
 		cp "$MODDIR/thermal/t_blank" "$MODDIR/t_blank" > /dev/null 2>&1
 	fi
 	exit 0
 fi
-t_bypass_md5="$(md5sum "$MODDIR/t_bypass" | cut -d ' ' -f '1')"
-md5_bypass="9385b51aecde23f39aec307bdd362b58"
-if [ "$t_bypass_md5" != "$md5_bypass" ]; then
+t_bypass_0_md5="$(md5sum "$MODDIR/t_bypass_0" | cut -d ' ' -f '1')"
+md5_bypass_0="9385b51aecde23f39aec307bdd362b58"
+if [ "$t_bypass_0_md5" != "$md5_bypass_0" ]; then
 	rm -f "$MODDIR/mode" > /dev/null 2>&1
-	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块t_bypass文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
-	thermal_t_bypass_md5="$(md5sum "$MODDIR/thermal/t_bypass" | cut -d ' ' -f '1')"
-	if [ "$thermal_t_bypass_md5" = "$md5_bypass" ]; then
-		cp "$MODDIR/thermal/t_bypass" "$MODDIR/t_bypass" > /dev/null 2>&1
+	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块t_bypass_0文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+	thermal_t_bypass_md5="$(md5sum "$MODDIR/thermal/t_bypass_0" | cut -d ' ' -f '1')"
+	if [ -f "$MODDIR/thermal/t_bypass_0" -a "$thermal_t_bypass_md5" = "$md5_bypass_0" ]; then
+		cp "$MODDIR/thermal/t_bypass_0" "$MODDIR/t_bypass_0" > /dev/null 2>&1
+	fi
+	exit 0
+fi
+t_bypass_1_md5="$(md5sum "$MODDIR/t_bypass_1" | cut -d ' ' -f '1')"
+md5_bypass_1="0f952cfa2038b82178ba40aa00218fda"
+if [ "$t_bypass_1_md5" != "$md5_bypass_1" ]; then
+	rm -f "$MODDIR/mode" > /dev/null 2>&1
+	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块t_bypass_1文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+	thermal_t_bypass_md5="$(md5sum "$MODDIR/thermal/t_bypass_1" | cut -d ' ' -f '1')"
+	if [ -f "$MODDIR/thermal/t_bypass_1" -a "$thermal_t_bypass_md5" = "$md5_bypass_1" ]; then
+		cp "$MODDIR/thermal/t_bypass_1" "$MODDIR/t_bypass_1" > /dev/null 2>&1
 	fi
 	exit 0
 fi
@@ -63,6 +76,17 @@ start_thermal_program() {
 			start "$i" > /dev/null 2>&1
 		fi
 	done
+	which_mi_thermald="$(which 'mi_thermald')"
+	if [ -f "$which_mi_thermald" ]; then
+		for i in $thermal_program ; do
+			if [ "$i" != 'mi_thermald' ]; then
+				which_thermal="$(which "$i")"
+				if [ -f "$which_thermal" ]; then
+					stop "$i" > /dev/null 2>&1
+				fi
+			fi
+		done
+	fi
 	thermal_program_id="$(pgrep 'mi_thermald|thermal-engine|thermal-engine-v2|thermalserviced')"
 	if [ -n "$thermal_program_id" ]; then
 		if [ ! -f '/data/vendor/thermal/thermal.dump' ]; then
@@ -90,6 +114,23 @@ start_thermal_program() {
 		exit 0
 	fi
 }
+bypass_supply_md5() {
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i -v '\-map')"
+	for i in $thermal_list ; do
+		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
+		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$md5_bypass" ]; then
+			cp "$MODDIR/$t_bypass" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
+		fi
+	done
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i '\-map')"
+	for i in $thermal_list ; do
+		thermal_vendor_md5="$(md5sum "/system/vendor/etc/$i" | cut -d ' ' -f '1')"
+		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
+		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$thermal_vendor_md5" ]; then
+			cp "/system/vendor/etc/$i" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
+		fi
+	done
+}
 current_log() {
 	current_txt="$(echo "$config_conf" | egrep '^current_txt=' | sed -n 's/current_txt=//g;$p')"
 	if [ "$current_txt" = "1" ]; then
@@ -97,19 +138,16 @@ current_log() {
 		if [ "$current_n" -gt "500" ]; then
 			sed -i '1,50d' "$MODDIR/current.txt" > /dev/null 2>&1
 		fi
-		battery_level="$(cat '/sys/class/power_supply/battery/capacity')"
-		current_now="$(cat '/sys/class/power_supply/battery/current_now')"
 		battery_temp="$(cat '/sys/class/power_supply/battery/temp' | cut -c '1-2')"
 		if [ "$stop_level" -gt "0" ]; then
-			echo "$(date +%F_%T) 电量$battery_level 档位$thermal_scene 旁辅$current_max 当前电流$current_now 温度$battery_temp 旁路$stop_level" >> "$MODDIR/current.txt"
+			echo "$(date +%F_%T) 电量$battery_level 档位$thermal_scene 旁辅$current_max 当前电流$now_current 温度$battery_temp 旁路$stop_level" >> "$MODDIR/current.txt"
 		else
-			echo "$(date +%F_%T) 电量$battery_level 档位$thermal_scene 旁辅$current_max 当前电流$current_now 温度$battery_temp" >> "$MODDIR/current.txt"
+			echo "$(date +%F_%T) 电量$battery_level 档位$thermal_scene 旁辅$current_max 当前电流$now_current 温度$battery_temp" >> "$MODDIR/current.txt"
 		fi
 	fi
 }
 change_current() {
 	if [ "$current_max" = "0" ]; then
-		now_current="$(cat '/sys/class/power_supply/battery/current_now')"
 		if [ -n "$now_current" ]; then
 			echo "$now_current" >> "$MODDIR/now_c"
 			now_current_n="$(cat "$MODDIR/now_c" | wc -l)"
@@ -139,21 +177,7 @@ change_current() {
 		done
 		echo "$current_max" > "$MODDIR/max_c"
 		if [ "$log_c" = "1" ]; then
-			thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i -v '\-map')"
-			for i in $thermal_list ; do
-				thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
-				if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$md5_bypass" ]; then
-					cp "$MODDIR/t_bypass" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
-				fi
-			done
-			thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i '\-map')"
-			for i in $thermal_list ; do
-				thermal_vendor_md5="$(md5sum "/system/vendor/etc/$i" | cut -d ' ' -f '1')"
-				thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
-				if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$thermal_vendor_md5" ]; then
-					cp "/system/vendor/etc/$i" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
-				fi
-			done
+			bypass_supply_md5
 			start_thermal_program
 			mode="$(cat "$MODDIR/mode")"
 			if [ "$bypass_supply_mode" = "1" ]; then
@@ -196,23 +220,23 @@ change_current() {
 		fi
 	fi
 }
-bypass_supply_current() {
-	stop_level="$(cat "$MODDIR/stop_level")"
-	battery_level="$(cat '/sys/class/power_supply/battery/capacity')"
+bypass_stop_level() {
 	if [ "$battery_level" -gt "0" ]; then
 		until [ "$stop_level" -gt "0" ]; do
 			stop_level="$battery_level"
 			echo "$stop_level" > "$MODDIR/stop_level"
 		done
-		if [ "$bypass_max" = "1" ]; then
-			if [ "$battery_level" -gt "$stop_level" -o "$battery_level" = "100" ]; then
-				current_max="0"
-			fi
-			change_current
+		stop_level_2="$(( $stop_level - 1 ))"
+		if [ "$battery_level" -lt "$stop_level_2" -o "$battery_level" -lt "3" ]; then
+			md5_bypass="$md5_bypass_1"
+			t_bypass='t_bypass_1'
 		else
-			current_max="-"
-			current_log
+			md5_bypass="$md5_bypass_0"
+			t_bypass='t_bypass_0'
 		fi
+	else
+		md5_bypass="$md5_bypass_0"
+		t_bypass='t_bypass_0'
 	fi
 }
 stop_current() {
@@ -228,31 +252,26 @@ stop_current() {
 		fi
 	fi
 }
-bypass_supply_md5() {
-	bypass_supply_current
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i -v '\-map')"
-	for i in $thermal_list ; do
-		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
-		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$md5_bypass" ]; then
-			cp "$MODDIR/t_bypass" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
-			log_log=1
+bypass_supply_current() {
+	if [ "$battery_level" -gt "0" ]; then
+		if [ "$bypass_max" = "1" ]; then
+			if [ "$battery_level" -gt "$stop_level" -o "$battery_level" = "100" ]; then
+				current_max="0"
+			fi
+			change_current
+		else
+			current_max="-"
+			current_log
 		fi
-	done
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i '\-map')"
-	for i in $thermal_list ; do
-		thermal_vendor_md5="$(md5sum "/system/vendor/etc/$i" | cut -d ' ' -f '1')"
-		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
-		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$thermal_vendor_md5" ]; then
-			cp "/system/vendor/etc/$i" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
-			log_log=1
-		fi
-	done
+	fi
+	bypass_supply_md5
 }
 bypass_supply_conf() {
+	stop_level="$(cat "$MODDIR/stop_level")"
 	battery_temp="$(cat '/sys/class/power_supply/battery/temp' | cut -c '1-2')"
 	bypass_supply_temp_1="$(echo "$config_conf" | egrep '^bypass_supply_temp=' | sed -n 's/bypass_supply_temp=//g;$p' | cut -d ' ' -f '1')"
 	bypass_supply_temp_2="$(echo "$config_conf" | egrep '^bypass_supply_temp=' | sed -n 's/bypass_supply_temp=//g;$p' | cut -d ' ' -f '2')"
-	if [ -n "$battery_temp" -a -n "$bypass_supply_temp_2" -a "$bypass_supply_temp_1" -gt "$bypass_supply_temp_2" ]; then
+	if [ "$battery_temp" -gt "0" -a "$bypass_supply_temp_2" -gt "0" -a "$bypass_supply_temp_1" -gt "$bypass_supply_temp_2" ]; then
 		if [ "$battery_temp" -ge "$bypass_supply_temp_1" ]; then
 			if [ ! -f "$MODDIR/on_bypass_temp" ]; then
 				touch "$MODDIR/on_bypass_temp" > /dev/null 2>&1
@@ -267,29 +286,32 @@ bypass_supply_conf() {
 	fi
 	if [ -f "$MODDIR/on_bypass_temp" ]; then
 		bypass_supply_mode=1
+		bypass_stop_level
 	else
 		if [ -f "$MODDIR/on_bypass" ]; then
 			bypass_supply_mode=2
+			bypass_stop_level
 		else
-			battery_level="$(cat '/sys/class/power_supply/battery/capacity')"
 			bypass_supply_level="$(echo "$config_conf" | egrep '^bypass_supply_level=' | sed -n 's/bypass_supply_level=//g;$p')"
 			if [ "$bypass_supply_level" = "100" ]; then
 				bypass_supply_level=99
 			fi
-			if [ -n "$battery_level" -a -n "$bypass_supply_level" -a "$battery_level" -ge "$bypass_supply_level" ]; then
+			if [ "$bypass_supply_level" -gt "1" -a "$battery_level" -ge "$bypass_supply_level" ]; then
 				bypass_supply_mode=3
+				bypass_stop_level
 			else
 				bypass_supply_app="$(echo "$config_conf" | egrep '^bypass_supply_app=' | sed -n 's/bypass_supply_app=//g;$p')"
 				if [ "$app_on" = "1" -a "$bypass_supply_app" = "1" ]; then
 					bypass_supply_mode=4
+					bypass_stop_level
 				fi
 			fi
 		fi
 	fi
+	mode="$(cat "$MODDIR/mode")"
 	if [ "$bypass_supply_mode" = "1" ]; then
-		bypass_supply_md5
-		mode="$(cat "$MODDIR/mode")"
-		if [ "$log_log" = "1" -o "$mode" != "6" ]; then
+		bypass_supply_current
+		if [ "$mode" != "6" ]; then
 			start_thermal_program
 			echo "6" > "$MODDIR/mode"
 			sed -i 's/\[.*\]/\[ 当前温控：温度-旁路供电 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
@@ -297,9 +319,8 @@ bypass_supply_conf() {
 		fi
 		exit 0
 	elif [ "$bypass_supply_mode" = "2" ]; then
-		bypass_supply_md5
-		mode="$(cat "$MODDIR/mode")"
-		if [ "$log_log" = "1" -o "$mode" != "7" ]; then
+		bypass_supply_current
+		if [ "$mode" != "7" ]; then
 			start_thermal_program
 			echo "7" > "$MODDIR/mode"
 			sed -i 's/\[.*\]/\[ 当前温控：手动-旁路供电 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
@@ -307,9 +328,8 @@ bypass_supply_conf() {
 		fi
 		exit 0
 	elif [ "$bypass_supply_mode" = "3" ]; then
-		bypass_supply_md5
-		mode="$(cat "$MODDIR/mode")"
-		if [ "$log_log" = "1" -o "$mode" != "8" ]; then
+		bypass_supply_current
+		if [ "$mode" != "8" ]; then
 			start_thermal_program
 			echo "8" > "$MODDIR/mode"
 			sed -i 's/\[.*\]/\[ 当前温控：电量-旁路供电 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
@@ -317,9 +337,8 @@ bypass_supply_conf() {
 		fi
 		exit 0
 	elif [ "$bypass_supply_mode" = "4" ]; then
-		bypass_supply_md5
-		mode="$(cat "$MODDIR/mode")"
-		if [ "$log_log" = "1" -o "$mode" != "9" ]; then
+		bypass_supply_current
+		if [ "$mode" != "9" ]; then
 			start_thermal_program
 			echo "9" > "$MODDIR/mode"
 			sed -i 's/\[.*\]/\[ 当前温控：游戏-旁路供电 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
@@ -383,8 +402,8 @@ thermal_scene_conf() {
 			log_log=1
 		fi
 	done
+	mode="$(cat "$MODDIR/mode")"
 	if [ "$thermal_scene" = "1" ]; then
-		mode="$(cat "$MODDIR/mode")"
 		if [ "$log_log" = "1" -o "$mode" != "11" ]; then
 			start_thermal_program
 			echo "11" > "$MODDIR/mode"
@@ -392,7 +411,6 @@ thermal_scene_conf() {
 			echo "$(date +%F_%T) 当前温控：一档-无限制" >> "$MODDIR/log.log"
 		fi
 	elif [ "$thermal_scene" = "2" ]; then
-		mode="$(cat "$MODDIR/mode")"
 		if [ "$log_log" = "1" -o "$mode" != "12" ]; then
 			start_thermal_program
 			echo "12" > "$MODDIR/mode"
@@ -400,7 +418,6 @@ thermal_scene_conf() {
 			echo "$(date +%F_%T) 当前温控：二档-无限制" >> "$MODDIR/log.log"
 		fi
 	elif [ "$thermal_scene" = "3" ]; then
-		mode="$(cat "$MODDIR/mode")"
 		if [ "$log_log" = "1" -o "$mode" != "13" ]; then
 			start_thermal_program
 			echo "13" > "$MODDIR/mode"
@@ -408,7 +425,6 @@ thermal_scene_conf() {
 			echo "$(date +%F_%T) 当前温控：三档-无限制" >> "$MODDIR/log.log"
 		fi
 	else
-		mode="$(cat "$MODDIR/mode")"
 		if [ "$log_log" = "1" -o "$mode" != "10" ]; then
 			start_thermal_program
 			echo "10" > "$MODDIR/mode"
@@ -586,6 +602,9 @@ if [ "$screen_on" != 'false' ]; then
 				if [ "$dumpsys_charging" = "true" ]; then
 					app_on=1
 					bypass_supply_conf
+					if [ "$bypass_supply_app" -gt "1" ]; then
+						thermal_scene="$bypass_supply_app"
+					fi
 				else
 					stop_current
 				fi
@@ -658,5 +677,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022100600
+#version=2022100700
 # ##
