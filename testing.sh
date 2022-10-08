@@ -21,7 +21,7 @@ for i in $thermal_program ; do
 		cat_thermal="$(cat "$which_thermal" | wc -c)"
 		pgrep_thermal="$(pgrep "$i" | sed -n '1p')"
 		if [ ! -n "$pgrep_thermal" ]; then
-			echo "$which_thermal该温控进程异常没有启动，可能会无法快充，可能被系统屏蔽或被其它模块屏蔽，请恢复"
+			echo "$which_thermal该温控进程异常没有启动，有可能会无法快充，可能被系统内核屏蔽或被其它模块屏蔽"
 		fi
 		thermal_data="$which_thermal,$cat_thermal,$pgrep_thermal,$thermal_data"
 	fi
