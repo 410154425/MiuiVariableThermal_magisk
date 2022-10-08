@@ -61,33 +61,27 @@ if [ "$t_bypass_1_md5" != "$md5_bypass_1" ]; then
 	exit 0
 fi
 start_thermal_program() {
-	thermal_program="mi_thermald thermal-engine thermal-engine-v2 thermalserviced"
-	for i in $thermal_program ; do
-		which_thermal="$(which "$i")"
-		if [ -f "$which_thermal" ]; then
-			stop "$i" > /dev/null 2>&1
-		fi
-	done
-	chattr -R -i -a '/data/vendor/thermal/'
-	rm -f '/data/vendor/thermal/thermal.dump' > /dev/null 2>&1
-	for i in $thermal_program ; do
-		which_thermal="$(which "$i")"
-		if [ -f "$which_thermal" ]; then
-			start "$i" > /dev/null 2>&1
-		fi
-	done
-	which_mi_thermald="$(which 'mi_thermald')"
-	if [ -f "$which_mi_thermald" ]; then
-		for i in $thermal_program ; do
-			if [ "$i" != 'mi_thermald' ]; then
-				which_thermal="$(which "$i")"
-				if [ -f "$which_thermal" ]; then
-					stop "$i" > /dev/null 2>&1
-				fi
-			fi
-		done
+	which_thermal_1="$(which 'mi_thermald')"
+	which_thermal_2="$(which 'thermal-engine')"
+	if [ -f "$which_thermal_1" ]; then
+		thermal_program='mi_thermald'
+		stop "$thermal_program" > /dev/null 2>&1
+		chattr -R -i -a '/data/vendor/thermal/'
+		rm -f '/data/vendor/thermal/thermal.dump' > /dev/null 2>&1
+		start "$thermal_program" > /dev/null 2>&1
+	elif [ -f "$which_thermal_2" ]; then
+		thermal_program='thermal-engine'
+		stop "$thermal_program" > /dev/null 2>&1
+		chattr -R -i -a '/data/vendor/thermal/'
+		rm -f '/data/vendor/thermal/thermal.dump' > /dev/null 2>&1
+		start "$thermal_program" > /dev/null 2>&1
+	else
+		rm -f "$MODDIR/mode" > /dev/null 2>&1
+		rm -f "$MODDIR/max_c" > /dev/null 2>&1
+		sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则系统可能不支持MIUI云温控，无法使用 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+		exit 0
 	fi
-	thermal_program_id="$(pgrep 'mi_thermald|thermal-engine|thermal-engine-v2|thermalserviced')"
+	thermal_program_id="$(pgrep "$thermal_program")"
 	if [ -n "$thermal_program_id" ]; then
 		if [ ! -f '/data/vendor/thermal/thermal.dump' ]; then
 			sleep 1
@@ -110,7 +104,7 @@ start_thermal_program() {
 	else
 		rm -f "$MODDIR/mode" > /dev/null 2>&1
 		rm -f "$MODDIR/max_c" > /dev/null 2>&1
-		sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则系统温控程序被屏蔽或删除了，请恢复重启后再使用 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+		sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则系统温控进程文件被屏蔽或删除了，请恢复重启后再使用 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 		exit 0
 	fi
 }
@@ -424,6 +418,20 @@ thermal_scene_conf() {
 			sed -i 's/\[.*\]/\[ 当前温控：三档-无限制 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 			echo "$(date +%F_%T) 当前温控：三档-无限制" >> "$MODDIR/log.log"
 		fi
+	elif [ "$thermal_scene" = "4" ]; then
+		if [ "$log_log" = "1" -o "$mode" != "14" ]; then
+			start_thermal_program
+			echo "14" > "$MODDIR/mode"
+			sed -i 's/\[.*\]/\[ 当前温控：四档-无限制 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+			echo "$(date +%F_%T) 当前温控：四档-无限制" >> "$MODDIR/log.log"
+		fi
+	elif [ "$thermal_scene" = "5" ]; then
+		if [ "$log_log" = "1" -o "$mode" != "15" ]; then
+			start_thermal_program
+			echo "15" > "$MODDIR/mode"
+			sed -i 's/\[.*\]/\[ 当前温控：五档-无限制 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+			echo "$(date +%F_%T) 当前温控：五档-无限制" >> "$MODDIR/log.log"
+		fi
 	else
 		if [ "$log_log" = "1" -o "$mode" != "10" ]; then
 			start_thermal_program
@@ -677,5 +685,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022100700
+#version=2022100800
 # ##
