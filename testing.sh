@@ -20,15 +20,9 @@ for i in $thermal_program ; do
 	if [ -f "$which_thermal" ]; then
 		cat_thermal="$(cat "$which_thermal" | wc -c)"
 		pgrep_thermal="$(pgrep "$i" | sed -n '1p')"
-		if [ ! -n "$pgrep_thermal" ]; then
-			thermal_program_off="$which_thermal该温控进程异常没有启动，有可能会无法快充，可能被系统内核屏蔽或被其它模块屏蔽"
-		fi
 		thermal_data="$which_thermal,$cat_thermal,$pgrep_thermal,$thermal_data"
 	fi
 done
-if [ -n "$thermal_program_off" ]; then
-	echo "$thermal_program_off"
-fi
 echo "$thermal_data"
 if [ -f "/data/vendor/thermal/decrypt.txt" ]; then
 	decrypt_txt="$(cat "/data/vendor/thermal/decrypt.txt" | wc -c)"
