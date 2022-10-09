@@ -661,5 +661,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022100910
+#version=2022100900
 # ##
