@@ -28,7 +28,7 @@ if [ ! -d '/data/vendor/thermal/config/' ]; then
 fi
 chmod -R 0771 '/data/vendor/thermal/' > /dev/null 2>&1
 t_blank_md5="$(md5sum "$MODDIR/t_blank" | cut -d ' ' -f '1')"
-md5_blank="274c5e0af758d6334b1e2e3e0013657d"
+md5_blank="504b66ce8edee9842e487bd3adc5d158"
 if [ "$t_blank_md5" != "$md5_blank" ]; then
 	rm -f "$MODDIR/mode" > /dev/null 2>&1
 	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块t_blank文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
@@ -39,7 +39,7 @@ if [ "$t_blank_md5" != "$md5_blank" ]; then
 	exit 0
 fi
 t_bypass_0_md5="$(md5sum "$MODDIR/t_bypass_0" | cut -d ' ' -f '1')"
-md5_bypass_0="0f865d6be22dd49938129fb69df6a554"
+md5_bypass_0="3790c1cbdf8d73fb1c028510bab1fe15"
 if [ "$t_bypass_0_md5" != "$md5_bypass_0" ]; then
 	rm -f "$MODDIR/mode" > /dev/null 2>&1
 	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块t_bypass_0文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
@@ -50,7 +50,7 @@ if [ "$t_bypass_0_md5" != "$md5_bypass_0" ]; then
 	exit 0
 fi
 t_bypass_1_md5="$(md5sum "$MODDIR/t_bypass_1" | cut -d ' ' -f '1')"
-md5_bypass_1="03bdba97e7b68691df6bd13320c47099"
+md5_bypass_1="b37574198e339747b06db2d3ce8346a1"
 if [ "$t_bypass_1_md5" != "$md5_bypass_1" ]; then
 	rm -f "$MODDIR/mode" > /dev/null 2>&1
 	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块t_bypass_1文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
@@ -661,5 +661,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022100900
+#version=2022101000
 # ##
