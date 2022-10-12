@@ -38,7 +38,8 @@ if [ "$thermal_normal_n" = "0" ]; then
 fi
 map_c="$(cat '/system/vendor/etc/thermal-map.conf' | wc -c)"
 normal_c="$(cat '/system/vendor/etc/thermal-normal.conf' | wc -c)"
-if [ "$map_c" -lt "20" -o "$normal_c" -lt "20" ]; then
+devices_c="$(cat '/system/vendor/etc/thermald-devices.conf' | wc -c)"
+if [ "$map_c" -lt "20" -o "$normal_c" -lt "20" -o "$devices_c" -lt "20" ]; then
 	thermal_normal_n="$(echo "$thermal_normal" | egrep -i 'thermal')"
 	for i in $thermal_normal_n ; do
 		thermal_normal_c="$(cat "/system/vendor/etc/$i" | wc -c)"

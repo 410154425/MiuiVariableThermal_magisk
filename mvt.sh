@@ -28,7 +28,7 @@ if [ ! -d '/data/vendor/thermal/config/' ]; then
 fi
 chmod -R 0771 '/data/vendor/thermal/' > /dev/null 2>&1
 t_blank_md5="$(md5sum "$MODDIR/t_blank" | cut -d ' ' -f '1')"
-md5_blank="504b66ce8edee9842e487bd3adc5d158"
+md5_blank="292897c484f6ccf687c421160aee2ce2"
 if [ "$t_blank_md5" != "$md5_blank" ]; then
 	rm -f "$MODDIR/mode" > /dev/null 2>&1
 	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块t_blank文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
@@ -39,7 +39,7 @@ if [ "$t_blank_md5" != "$md5_blank" ]; then
 	exit 0
 fi
 t_bypass_0_md5="$(md5sum "$MODDIR/t_bypass_0" | cut -d ' ' -f '1')"
-md5_bypass_0="3790c1cbdf8d73fb1c028510bab1fe15"
+md5_bypass_0="4d347e7785c250a18582b850b5d98c65"
 if [ "$t_bypass_0_md5" != "$md5_bypass_0" ]; then
 	rm -f "$MODDIR/mode" > /dev/null 2>&1
 	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块t_bypass_0文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
@@ -50,7 +50,7 @@ if [ "$t_bypass_0_md5" != "$md5_bypass_0" ]; then
 	exit 0
 fi
 t_bypass_1_md5="$(md5sum "$MODDIR/t_bypass_1" | cut -d ' ' -f '1')"
-md5_bypass_1="b37574198e339747b06db2d3ce8346a1"
+md5_bypass_1="012f66e1bf7cdd356555cb0d09498ead"
 if [ "$t_bypass_1_md5" != "$md5_bypass_1" ]; then
 	rm -f "$MODDIR/mode" > /dev/null 2>&1
 	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块t_bypass_1文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
@@ -134,9 +134,9 @@ current_log() {
 		fi
 		battery_temp="$(cat '/sys/class/power_supply/battery/temp' | cut -c '1-2')"
 		if [ "$stop_level" -gt "0" ]; then
-			echo "$(date +%F_%T) 电量$battery_level 档位$thermal_scene 旁辅$current_max 当前电流$now_current 温度$battery_temp 旁路$stop_level" >> "$MODDIR/current.txt"
+			echo "$(date +%F_%T) 电量$battery_level 档位$thermal_scene 旁辅$current_max 电流$now_current 温度$battery_temp 旁路$stop_level" >> "$MODDIR/current.txt"
 		else
-			echo "$(date +%F_%T) 电量$battery_level 档位$thermal_scene 旁辅$current_max 当前电流$now_current 温度$battery_temp" >> "$MODDIR/current.txt"
+			echo "$(date +%F_%T) 电量$battery_level 档位$thermal_scene 旁辅$current_max 电流$now_current 温度$battery_temp" >> "$MODDIR/current.txt"
 		fi
 	fi
 }
@@ -661,5 +661,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022101000
+#version=2022101200
 # ##
