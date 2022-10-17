@@ -30,40 +30,36 @@ if [ ! -d '/data/vendor/thermal/config/' ]; then
 fi
 chmod -R 0771 '/data/vendor/thermal/' > /dev/null 2>&1
 t_blank_md5="$(md5sum "$MODDIR/t_blank" | cut -d ' ' -f '1')"
-md5_blank="a9812f06d8ba4154ac8d01b1773833f8"
-if [ "$t_blank_md5" != "$md5_blank" ]; then
+md5_blank="160980abef75e9534a12734f8f9c5a13"
+t_bypass_0_md5="$(md5sum "$MODDIR/t_bypass_0" | cut -d ' ' -f '1')"
+md5_bypass_0="cf001206941b4d9a6ba844d4b80449ec"
+t_bypass_1_md5="$(md5sum "$MODDIR/t_bypass_1" | cut -d ' ' -f '1')"
+md5_bypass_1="b3e2a686b76072324f2b5bf32393e115"
+if [ "$t_blank_md5" != "$md5_blank" -o "$t_bypass_0_md5" != "$md5_bypass_0" -o "$t_bypass_1_md5" != "$md5_bypass_1" ]; then
 	rm -f "$MODDIR/mode" > /dev/null 2>&1
-	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块t_blank文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 	thermal_t_blank_md5="$(md5sum "$MODDIR/thermal/t_blank" | cut -d ' ' -f '1')"
 	if [ -f "$MODDIR/thermal/t_blank" -a "$thermal_t_blank_md5" = "$md5_blank" ]; then
 		cp "$MODDIR/thermal/t_blank" "$MODDIR/t_blank" > /dev/null 2>&1
 	fi
-	exit 0
-fi
-t_bypass_0_md5="$(md5sum "$MODDIR/t_bypass_0" | cut -d ' ' -f '1')"
-md5_bypass_0="cf001206941b4d9a6ba844d4b80449ec"
-if [ "$t_bypass_0_md5" != "$md5_bypass_0" ]; then
-	rm -f "$MODDIR/mode" > /dev/null 2>&1
-	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块t_bypass_0文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
-	thermal_t_bypass_md5="$(md5sum "$MODDIR/thermal/t_bypass_0" | cut -d ' ' -f '1')"
-	if [ -f "$MODDIR/thermal/t_bypass_0" -a "$thermal_t_bypass_md5" = "$md5_bypass_0" ]; then
+	thermal_t_bypass_0_md5="$(md5sum "$MODDIR/thermal/t_bypass_0" | cut -d ' ' -f '1')"
+	if [ -f "$MODDIR/thermal/t_bypass_0" -a "$thermal_t_bypass_0_md5" = "$md5_bypass_0" ]; then
 		cp "$MODDIR/thermal/t_bypass_0" "$MODDIR/t_bypass_0" > /dev/null 2>&1
 	fi
-	exit 0
-fi
-t_bypass_1_md5="$(md5sum "$MODDIR/t_bypass_1" | cut -d ' ' -f '1')"
-md5_bypass_1="b3e2a686b76072324f2b5bf32393e115"
-if [ "$t_bypass_1_md5" != "$md5_bypass_1" ]; then
-	rm -f "$MODDIR/mode" > /dev/null 2>&1
-	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块t_bypass_1文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
-	thermal_t_bypass_md5="$(md5sum "$MODDIR/thermal/t_bypass_1" | cut -d ' ' -f '1')"
-	if [ -f "$MODDIR/thermal/t_bypass_1" -a "$thermal_t_bypass_md5" = "$md5_bypass_1" ]; then
+	thermal_t_bypass_1_md5="$(md5sum "$MODDIR/thermal/t_bypass_1" | cut -d ' ' -f '1')"
+	if [ -f "$MODDIR/thermal/t_bypass_1" -a "$thermal_t_bypass_1_md5" = "$md5_bypass_1" ]; then
 		cp "$MODDIR/thermal/t_bypass_1" "$MODDIR/t_bypass_1" > /dev/null 2>&1
 	fi
 	exit 0
 fi
 md5_bypass="$md5_bypass_0"
 t_bypass='t_bypass_0'
+delete_conf() {
+	chattr -R -i -a '/data/vendor/thermal/'
+	rm -rf '/data/vendor/thermal/config/' > /dev/null 2>&1
+	mkdir -p '/data/vendor/thermal/config/' > /dev/null 2>&1
+	chmod -R 0771 '/data/vendor/thermal/' > /dev/null 2>&1
+}
 start_thermal_program() {
 	which_thermal_1="$(which 'mi_thermald')"
 	which_thermal_2="$(which 'thermal-engine')"
@@ -82,6 +78,7 @@ start_thermal_program() {
 	else
 		rm -f "$MODDIR/mode" > /dev/null 2>&1
 		rm -f "$MODDIR/max_c" > /dev/null 2>&1
+		delete_conf
 		sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则系统可能不支持MIUI云温控，无法使用 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 		exit 0
 	fi
@@ -108,6 +105,7 @@ start_thermal_program() {
 	else
 		rm -f "$MODDIR/mode" > /dev/null 2>&1
 		rm -f "$MODDIR/max_c" > /dev/null 2>&1
+		delete_conf
 		sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则系统温控进程文件被屏蔽或删除了，请恢复重启后再使用 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 		exit 0
 	fi
@@ -118,7 +116,9 @@ bypass_supply_md5() {
 		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
 		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$md5_bypass" ]; then
 			cp "$MODDIR/$t_bypass" "/data/vendor/thermal/config/$i" > /dev/null 2>&1
-			log_log=1
+			if [ "$thermal_config_md5" != "$md5_bypass_0" -a "$thermal_config_md5" != "$md5_bypass_1" ]; then
+				log_log=1
+			fi
 		fi
 	done
 	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i '\-map')"
@@ -152,11 +152,12 @@ change_current() {
 		if [ -n "$now_current" ]; then
 			echo "$now_current" >> "$MODDIR/now_c"
 			now_current_n="$(cat "$MODDIR/now_c" | wc -l)"
-			if [ "$now_current_n" -gt "15" ]; then
-				sed -i '1,5d' "$MODDIR/now_c" > /dev/null 2>&1
+			if [ "$now_current_n" -gt "10" ]; then
+				sed -i '1,2d' "$MODDIR/now_c" > /dev/null 2>&1
 			fi
 			now_current_e="$(cat "$MODDIR/now_c" | egrep '\-' | wc -l)"
-			if [ "$now_current_e" -ge "4" ]; then
+			now_current_ev="$(cat "$MODDIR/now_c" | egrep -v '\-' | wc -l)"
+			if [ "$now_current_e" -ge "5" -a "$now_current_ev" = "0" ]; then
 				current_max="100000"
 			else
 				current_max="0"
@@ -255,10 +256,7 @@ bypass_supply_conf() {
 			bypass_supply_mode=2
 		else
 			bypass_supply_level="$(echo "$config_conf" | egrep '^bypass_supply_level=' | sed -n 's/bypass_supply_level=//g;$p')"
-			if [ "$bypass_supply_level" = "100" ]; then
-				bypass_supply_level=99
-			fi
-			if [ "$bypass_supply_level" -gt "1" -a "$battery_level" -ge "$bypass_supply_level" ]; then
+			if [ "$bypass_supply_level" -gt "1" -a "$bypass_supply_level" != "100" -a "$battery_level" -ge "$bypass_supply_level" ]; then
 				bypass_supply_mode=3
 			else
 				bypass_supply_app="$(echo "$config_conf" | egrep '^bypass_supply_app=' | sed -n 's/bypass_supply_app=//g;$p')"
@@ -479,12 +477,6 @@ thermal_default_conf() {
 		echo "$(date +%F_%T) 当前温控：thermal-default.conf" >> "$MODDIR/log.log"
 	fi
 }
-delete_conf() {
-	chattr -R -i -a '/data/vendor/thermal/'
-	rm -rf '/data/vendor/thermal/config/' > /dev/null 2>&1
-	mkdir -p '/data/vendor/thermal/config/' > /dev/null 2>&1
-	chmod -R 0771 '/data/vendor/thermal/' > /dev/null 2>&1
-}
 thermal_conf() {
 	thermal_config="$(ls -A /data/vendor/thermal/config)"
 	if [ -n "$thermal_config" ]; then
@@ -645,5 +637,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022101600
+#version=2022101700
 # ##
