@@ -175,7 +175,7 @@ change_current() {
 			chmod 0644 "$i"
 			battery_current_data="$(cat "$i")"
 			if [ -n "$battery_current_data" -a "$battery_current_data" != "$current_max" ]; then
-				if [ "$battery_current_data" -ge "0" -o "$max_c" = "0" ]; then
+				if [ "$current_max" -ge "$current_bridge" -o "$battery_current_data" -ge "0" -o "$max_c" = "0" ]; then
 					if [ "$current_max" -ge "$current_bridge" -o "$battery_current_data" -le "$current_bridge" ]; then
 						echo "$current_max" > "$i"
 					else
@@ -256,7 +256,12 @@ bypass_supply_conf() {
 			bypass_supply_mode=2
 		else
 			bypass_supply_level="$(echo "$config_conf" | egrep '^bypass_supply_level=' | sed -n 's/bypass_supply_level=//g;$p')"
-			if [ "$bypass_supply_level" -gt "1" -a "$bypass_supply_level" != "100" -a "$battery_level" -ge "$bypass_supply_level" ]; then
+			bypass_supply_level_2="$(( $bypass_supply_level - 1 ))"
+			if [ "$battery_level" -ge "$bypass_supply_level" -a "$bypass_supply_level" -gt "2" ]; then
+				bypass_supply_mode=3
+			elif [ "$bypass_max" = "0" -a "$battery_level" = "$bypass_supply_level_2" -a "$bypass_supply_level" -gt "2" ]; then
+				md5_bypass="$md5_bypass_1"
+				t_bypass='t_bypass_1'
 				bypass_supply_mode=3
 			else
 				bypass_supply_app="$(echo "$config_conf" | egrep '^bypass_supply_app=' | sed -n 's/bypass_supply_app=//g;$p')"
@@ -286,6 +291,7 @@ bypass_supply_conf() {
 	elif [ "$bypass_supply_mode" = "3" ]; then
 		bypass_supply_current
 		if [ "$mode" != "8" ]; then
+			rm -f "$MODDIR/stop_level" > /dev/null 2>&1
 			echo "8" > "$MODDIR/mode"
 			sed -i 's/\[.*\]/\[ 当前温控：电量-旁路供电 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
 			echo "$(date +%F_%T) 当前温控：电量-旁路供电" >> "$MODDIR/log.log"
@@ -637,5 +643,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022101700
+#version=2022101800
 # ##
