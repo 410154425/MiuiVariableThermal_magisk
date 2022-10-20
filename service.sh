@@ -52,9 +52,10 @@ if [ "$map_c" -lt "20" -o "$normal_c" -lt "20" -o "$devices_c" -lt "20" ]; then
 fi
 delete_conf() {
 	chattr -R -i -a '/data/vendor/thermal/'
-	rm -rf '/data/vendor/thermal/config/' > /dev/null 2>&1
-	mkdir -p '/data/vendor/thermal/config/' > /dev/null 2>&1
-	chmod -R 0771 '/data/vendor/thermal/' > /dev/null 2>&1
+	thermal_config="$(ls -A /data/vendor/thermal/config)"
+	for i in $thermal_config ; do
+		rm -rf "/data/vendor/thermal/config/$i" > /dev/null 2>&1
+	done
 }
 rm -f "$MODDIR/mode" > /dev/null 2>&1
 rm -f "$MODDIR/max_c" > /dev/null 2>&1

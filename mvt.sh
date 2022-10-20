@@ -56,25 +56,28 @@ md5_bypass="$md5_bypass_0"
 t_bypass='t_bypass_0'
 delete_conf() {
 	chattr -R -i -a '/data/vendor/thermal/'
-	rm -rf '/data/vendor/thermal/config/' > /dev/null 2>&1
-	mkdir -p '/data/vendor/thermal/config/' > /dev/null 2>&1
-	chmod -R 0771 '/data/vendor/thermal/' > /dev/null 2>&1
+	thermal_config="$(ls -A /data/vendor/thermal/config)"
+	for i in $thermal_config ; do
+		rm -rf "/data/vendor/thermal/config/$i" > /dev/null 2>&1
+	done
+}
+program_data() {
+	chattr -R -i -a '/data/vendor/thermal/'
+	rm -f '/data/vendor/thermal/decrypt.txt' > /dev/null 2>&1
+	decrypt_n=5
+	until [ -f '/data/vendor/thermal/decrypt.txt' -o "$decrypt_n" = "0" ] ; do
+		echo "$(date +%F_%T)" > '/data/vendor/thermal/config/mvt.conf'
+		sleep 1
+		decrypt_n="$(( $decrypt_n - 1 ))"
+	done
 }
 start_thermal_program() {
 	which_thermal_1="$(which 'mi_thermald')"
 	which_thermal_2="$(which 'thermal-engine')"
 	if [ -f "$which_thermal_1" ]; then
 		thermal_program='mi_thermald'
-		stop "$thermal_program" > /dev/null 2>&1
-		chattr -R -i -a '/data/vendor/thermal/'
-		rm -f '/data/vendor/thermal/thermal.dump' > /dev/null 2>&1
-		start "$thermal_program" > /dev/null 2>&1
 	elif [ -f "$which_thermal_2" ]; then
 		thermal_program='thermal-engine'
-		stop "$thermal_program" > /dev/null 2>&1
-		chattr -R -i -a '/data/vendor/thermal/'
-		rm -f '/data/vendor/thermal/thermal.dump' > /dev/null 2>&1
-		start "$thermal_program" > /dev/null 2>&1
 	else
 		rm -f "$MODDIR/mode" > /dev/null 2>&1
 		rm -f "$MODDIR/max_c" > /dev/null 2>&1
@@ -84,14 +87,13 @@ start_thermal_program() {
 	fi
 	thermal_program_id="$(pgrep "$thermal_program")"
 	if [ -n "$thermal_program_id" ]; then
-		if [ ! -f '/data/vendor/thermal/thermal.dump' ]; then
-			sleep 1
-			dump_n=5
-			until [ -f '/data/vendor/thermal/thermal.dump' -o "$dump_n" = "0" ] ; do
-				sleep 1
-				dump_n="$(( $dump_n - 1 ))"
-			done
-			if [ ! -f '/data/vendor/thermal/thermal.dump' ]; then
+		program_data
+		if [ ! -f '/data/vendor/thermal/decrypt.txt' ]; then
+			stop "$thermal_program" > /dev/null 2>&1
+			start "$thermal_program" > /dev/null 2>&1
+			sleep 3
+			program_data
+			if [ ! -f '/data/vendor/thermal/decrypt.txt' ]; then
 				while true ; do
 					rm -f "$MODDIR/mode" > /dev/null 2>&1
 					rm -f "$MODDIR/max_c" > /dev/null 2>&1
@@ -107,8 +109,11 @@ start_thermal_program() {
 		rm -f "$MODDIR/max_c" > /dev/null 2>&1
 		delete_conf
 		sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则系统温控进程文件被屏蔽或删除了，请恢复重启后再使用 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+		stop "$thermal_program" > /dev/null 2>&1
+		start "$thermal_program" > /dev/null 2>&1
 		exit 0
 	fi
+	rm -f '/data/vendor/thermal/config/mvt.conf' > /dev/null 2>&1
 }
 bypass_supply_md5() {
 	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i -v '\-map')"
@@ -643,5 +648,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022101800
+#version=2022102000
 # ##

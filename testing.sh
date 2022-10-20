@@ -24,25 +24,20 @@ for i in $thermal_program ; do
 	fi
 done
 echo "$thermal_data"
-if [ -f "/data/vendor/thermal/decrypt.txt" ]; then
-	decrypt_txt="$(cat "/data/vendor/thermal/decrypt.txt" | wc -c)"
-	decrypt="yes,decrypt.txt,$decrypt_txt"
-else
-	decrypt="no,decrypt.txt"
-fi
-if [ -f "/data/vendor/thermal/thermal.dump" ]; then
-	thermal_dump="$(cat "/data/vendor/thermal/thermal.dump" | wc -c)"
-	dump="yes,thermal.dump,$thermal_dump"
-else
-	dump="no,thermal.dump"
-fi
+decrypt_dump="$(ls -A /data/vendor/thermal)"
+for i in $decrypt_dump ; do
+	if [ -f "/data/vendor/thermal/$i" ]; then
+		decrypt_dump_c="$(cat "/data/vendor/thermal/$i" | wc -c)"
+		decrypt_dump_config="$i $decrypt_dump_c,$decrypt_dump_config"
+	fi
+done
 if [ -f "$MODDIR/thermal_list" ]; then
 	thermal_list="$(cat "$MODDIR/thermal_list" | wc -l)"
-	t_list="yes,thermal_list,$thermal_list"
+	t_list="thermal_list,$thermal_list"
 else
 	t_list="no,thermal_list"
 fi
-echo "$decrypt $dump $t_list"
+echo "$decrypt_dump_config,$t_list"
 dumpsys_charging="$(dumpsys deviceidle get charging)"
 bypass_supply_mode=0
 if [ -f "$MODDIR/on_bypass" ]; then
@@ -63,7 +58,7 @@ bypass_supply_level="$(echo "$config_conf" | egrep '^bypass_supply_level=' | sed
 battery_temp="$(cat '/sys/class/power_supply/battery/temp' | cut -c '1-2')"
 bypass_supply_temp="$(echo "$config_conf" | egrep '^bypass_supply_temp=' | sed -n 's/bypass_supply_temp=//g;$p')"
 bypass_supply_app="$(echo "$config_conf" | egrep '^bypass_supply_app=' | sed -n 's/bypass_supply_app=//g;$p')"
-echo "模式$mode 档位$thermal_scene 充电场景$thermal_charge 游戏场景$thermal_app 刷新率$fps 充电状态$dumpsys_charging 电流模式$current_max 电流$current_now 旁停$stop_level 手动旁路$bypass_supply_mode 电量$battery_level 电量旁路$bypass_supply_level 温度$battery_temp 温度旁路$bypass_supply_temp 游戏旁路$bypass_supply_app"
+echo "模式$mode 档位$thermal_scene 充电场景$thermal_charge 游戏场景$thermal_app 刷新率$fps 充电状态$dumpsys_charging 电流模式$current_max 电流$current_now 旁停$stop_level 手动旁路$bypass_supply_mode 电量$battery_level 电量旁路$bypass_supply_level 温度$battery_temp 温度旁路$bypass_supply_temp 游戏旁路$bypass_supply_app 版本$module_version"
 echo --------- 电流节点 ----------
 battery_current_list="/sys/class/power_supply/battery/constant_charge_current_max /sys/class/power_supply/battery/constant_charge_current /sys/class/power_supply/battery/fast_charge_current /sys/class/power_supply/battery/thermal_input_current /sys/class/power_supply/battery/current_max"
 for i in $battery_current_list ; do
@@ -77,14 +72,16 @@ echo --------- 系统温控 ----------
 thermal_normal="$(find /system/*/* -type f -iname "*thermal*.conf" -o -type f -iname "*mi_thermald*" -o -type f -iname "*thermal-engine*" -o -type f -iname "*thermalserviced*")"
 for i in $thermal_normal ; do
 	thermal_normal_c="$(cat "$i" | wc -c)"
-	thermal_etc="$i $thermal_normal_c , $thermal_etc"
+	thermal_etc="$i $thermal_normal_c,$thermal_etc"
 done
 echo "$thermal_etc"
 echo --------- MIUI云温控 ----------
 thermal_normal="$(ls -A /data/vendor/thermal/config)"
 for i in $thermal_normal ; do
-	thermal_normal_c="$(cat "/data/vendor/thermal/config/$i" | wc -c)"
-	thermal_config="$i $thermal_normal_c , $thermal_config"
+	if [ -f "/data/vendor/thermal/config/$i" ]; then
+		thermal_normal_c="$(cat "/data/vendor/thermal/config/$i" | wc -c)"
+		thermal_config="$i $thermal_normal_c,$thermal_config"
+	fi
 done
 echo "$thermal_config"
 echo --------- 设备信息 ----------
