@@ -1,6 +1,6 @@
 until [ -f "${0%/*}/mvt.sh" ]; do
-	rm -f "${0%/*}/mode" > /dev/null 2>&1
-	sed -i 's/\[.*\]/\[ 文件mvt.sh丢失，请重新安装模块重启 \]/g' "${0%/*}/module.prop" > /dev/null 2>&1
+	rm -f "${0%/*}/mode"
+	sed -i 's/\[.*\]/\[ 文件mvt.sh丢失，请重新安装模块重启 \]/g' "${0%/*}/module.prop"
 	sleep 5
 done
 sleep 5
@@ -19,12 +19,12 @@ echo "am start -n com.tencent.mm/.plugin.webview.ui.tools.WebViewUI -d https://p
 echo "echo \"\"" >> "$MODDIR/.投币捐赠.sh"
 echo "echo \"正在跳转MIUI动态温控捐赠页面，请稍等。。。\"" >> "$MODDIR/.投币捐赠.sh"
 chmod 0755 "$MODDIR/.投币捐赠.sh"
-until [ -d '/data/vendor/thermal/' ]; do
-	rm -f "$MODDIR/mode" > /dev/null 2>&1
-	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则可能系统不支持MIUI云温控，也可能被第三方屏蔽或删除了，请自行排查重启后再试 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+until [ -d '/data/vendor/thermal/config/' ]; do
+	rm -f "$MODDIR/mode"
+	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则可能系统不支持MIUI云温控，也可能被第三方屏蔽或删除了，请自行排查重启后再试 \]/g' "$MODDIR/module.prop"
 	sleep 5
 done
-rm -f "$MODDIR/thermal_list" > /dev/null 2>&1
+rm -f "$MODDIR/thermal_list"
 until [ -f "$MODDIR/thermal_list" ]; do
 	find /system/vendor/etc -type f -iname "thermal*.conf" | sed -n 's/\/system\/vendor\/etc\///g;p' | egrep -v '\/' > "$MODDIR/thermal_list"
 	sleep 1
@@ -32,8 +32,8 @@ done
 thermal_normal="$(cat "$MODDIR/thermal_list")"
 thermal_normal_n="$(echo "$thermal_normal" | egrep -i 'thermal\-' | egrep -i -v '\-map' | wc -l)"
 if [ "$thermal_normal_n" = "0" ]; then
-	rm -f "$MODDIR/mode" > /dev/null 2>&1
-	sed -i 's/\[.*\]/\[ 没找到MIUI系统默认的温控文件，也可能系统不支持MIUI云温控，请排查恢复后再使用 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+	rm -f "$MODDIR/mode"
+	sed -i 's/\[.*\]/\[ 没找到MIUI系统默认的温控文件，也可能系统不支持MIUI云温控，请排查恢复后再使用 \]/g' "$MODDIR/module.prop"
 	exit 0
 fi
 map_c="$(cat '/system/vendor/etc/thermal-map.conf' | wc -c)"
@@ -44,24 +44,21 @@ if [ "$map_c" -lt "20" -o "$normal_c" -lt "20" -o "$devices_c" -lt "20" ]; then
 	for i in $thermal_normal_n ; do
 		thermal_normal_c="$(cat "/system/vendor/etc/$i" | wc -c)"
 		if [ -f "/system/vendor/etc/$i" -a "$thermal_normal_c" -lt "20" ]; then
-			rm -f "$MODDIR/mode" > /dev/null 2>&1
-			sed -i 's/\[.*\]/\[ MIUI系统温控文件可能被其它模块用空白文件屏蔽了，请排查温控相关的模块冲突，重启再使用 \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+			rm -f "$MODDIR/mode"
+			sed -i 's/\[.*\]/\[ MIUI系统温控文件可能被其它模块用空白文件屏蔽了，请排查温控相关的模块冲突，重启再使用 \]/g' "$MODDIR/module.prop"
 			exit 0
 		fi
 	done
 fi
 delete_conf() {
 	chattr -R -i -a '/data/vendor/thermal/'
-	thermal_config="$(ls -A /data/vendor/thermal/config)"
-	for i in $thermal_config ; do
-		rm -rf "/data/vendor/thermal/config/$i" > /dev/null 2>&1
-	done
+	rm -rf /data/vendor/thermal/config/*
 }
-rm -f "$MODDIR/mode" > /dev/null 2>&1
-rm -f "$MODDIR/max_c" > /dev/null 2>&1
-rm -f "$MODDIR/stop_level" > /dev/null 2>&1
-rm -f "$MODDIR/now_c" > /dev/null 2>&1
-sed -i 's/\[.*\]/\[ 当前温控：- \]/g' "$MODDIR/module.prop" > /dev/null 2>&1
+rm -f "$MODDIR/mode"
+rm -f "$MODDIR/max_c"
+rm -f "$MODDIR/stop_level"
+rm -f "$MODDIR/now_c"
+sed -i 's/\[.*\]/\[ 当前温控：- \]/g' "$MODDIR/module.prop"
 delete_conf
 up=1
 while true ; do

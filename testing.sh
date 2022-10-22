@@ -37,7 +37,8 @@ if [ -f "$MODDIR/thermal_list" ]; then
 else
 	t_list="no,thermal_list"
 fi
-echo "$decrypt_dump_config,$t_list"
+ls_z_config="$(ls -Z /data/vendor/thermal | egrep 'config')"
+echo "$decrypt_dump_config,$ls_z_config,$t_list"
 dumpsys_charging="$(dumpsys deviceidle get charging)"
 bypass_supply_mode=0
 if [ -f "$MODDIR/on_bypass" ]; then

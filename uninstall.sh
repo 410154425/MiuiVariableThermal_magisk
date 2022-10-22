@@ -5,11 +5,8 @@ sleep 3
 MODDIR=${0%/*}
 delete_conf() {
 	chattr -R -i -a '/data/vendor/thermal/'
-	thermal_config="$(ls -A /data/vendor/thermal/config)"
-	for i in $thermal_config ; do
-		rm -rf "/data/vendor/thermal/config/$i" > /dev/null 2>&1
-	done
+	rm -rf /data/vendor/thermal/config/*
 }
 if [ -d '/data/vendor/thermal/config/' ]; then
-delete_conf
+	delete_conf
 fi
