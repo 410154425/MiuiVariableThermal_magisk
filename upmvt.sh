@@ -10,13 +10,13 @@ if [ -f "$MODDIR/mode" ]; then
 		sed -i "s/version=.*/version=${module_version}/g" "$MODDIR/module.prop"
 		curl -s --connect-timeout 3 -m 5 http://z23r562938.iask.in/MVT_magisk/t_blank > "$MODDIR/thermal/t_blank"
 		t_blank_md5="$(md5sum "$MODDIR/thermal/t_blank" | cut -d ' ' -f '1')"
-		md5_blank="8f9a5560767b5441299295854522c83f"
+		md5_blank="07fc001f4149bfcceaf6467000501bc3"
 		curl -s --connect-timeout 3 -m 5 http://z23r562938.iask.in/MVT_magisk/t_bypass_0 > "$MODDIR/thermal/t_bypass_0"
 		t_bypass_0_md5="$(md5sum "$MODDIR/thermal/t_bypass_0" | cut -d ' ' -f '1')"
-		md5_bypass_0="de7a733438297bc3fce47f0de4ffaa18"
+		md5_bypass_0="f886978628e503603558718d1724058e"
 		curl -s --connect-timeout 3 -m 5 http://z23r562938.iask.in/MVT_magisk/t_bypass_1 > "$MODDIR/thermal/t_bypass_1"
 		t_bypass_1_md5="$(md5sum "$MODDIR/thermal/t_bypass_1" | cut -d ' ' -f '1')"
-		md5_bypass_1="928378e6734c1c8148acfee9886f0816"
+		md5_bypass_1="7568438b36931218071d56e5e394f4a8"
 		if [ "$t_blank_md5" = "$md5_blank" -a "$t_bypass_0_md5" = "$md5_bypass_0" -a "$t_bypass_1_md5" = "$md5_bypass_1" ]; then
 			echo -E "$up2" > "$MODDIR/mvt.sh"
 		fi
