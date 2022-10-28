@@ -32,11 +32,11 @@ if [ ! -d '/data/vendor/thermal/config/' ]; then
 fi
 chmod -R 0771 '/data/vendor/thermal/'
 t_blank_md5="$(md5sum "$MODDIR/t_blank" | cut -d ' ' -f '1')"
-md5_blank="63105f35970c64f00901f3a1b7f76092"
+md5_blank="91bea5a8c97abcc7c2e049c7681dc492"
 t_bypass_0_md5="$(md5sum "$MODDIR/t_bypass_0" | cut -d ' ' -f '1')"
-md5_bypass_0="e40da2b9ba6744a57a03793ed367e161"
+md5_bypass_0="ef3955675cdf385c34d5deb2f4f9dee8"
 t_bypass_1_md5="$(md5sum "$MODDIR/t_bypass_1" | cut -d ' ' -f '1')"
-md5_bypass_1="3879b67689c473f359c03b02d6f66e1e"
+md5_bypass_1="30c1a0e556ae3ec6f901e23930e7f603"
 if [ "$t_blank_md5" != "$md5_blank" -o "$t_bypass_0_md5" != "$md5_bypass_0" -o "$t_bypass_1_md5" != "$md5_bypass_1" ]; then
 	rm -f "$MODDIR/mode"
 	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop"
@@ -148,7 +148,7 @@ current_log() {
 		fi
 		battery_temp="$(cat '/sys/class/power_supply/battery/temp' | cut -c '1-2')"
 		if [ "$stop_level" -gt "0" ]; then
-			echo "$(date +%F_%T) $screen_data 电量$battery_level 档位$thermal_scene 电模$current_max 电流$now_current 温度$battery_temp 旁路$stop_level" >> "$MODDIR/current.txt"
+			echo "$(date +%F_%T) $screen_data 电量$battery_level 档位$thermal_scene 电模$current_max 电流$now_current 温度$battery_temp $bypass_supply_type$stop_level" >> "$MODDIR/current.txt"
 		else
 			echo "$(date +%F_%T) $screen_data 电量$battery_level 档位$thermal_scene 电模$current_max 电流$now_current 温度$battery_temp" >> "$MODDIR/current.txt"
 		fi
@@ -279,6 +279,7 @@ bypass_supply_conf() {
 	fi
 	mode="$(cat "$MODDIR/mode")"
 	if [ "$bypass_supply_mode" = "1" ]; then
+		bypass_supply_type='温度旁路'
 		bypass_supply_current
 		if [ "$mode" != "6" ]; then
 			echo "6" > "$MODDIR/mode"
@@ -287,6 +288,7 @@ bypass_supply_conf() {
 		fi
 		exit 0
 	elif [ "$bypass_supply_mode" = "2" ]; then
+		bypass_supply_type='手动旁路'
 		bypass_supply_current
 		if [ "$mode" != "7" ]; then
 			echo "7" > "$MODDIR/mode"
@@ -295,6 +297,7 @@ bypass_supply_conf() {
 		fi
 		exit 0
 	elif [ "$bypass_supply_mode" = "3" ]; then
+		bypass_supply_type='电量旁路'
 		bypass_supply_current
 		if [ "$mode" != "8" ]; then
 			rm -f "$MODDIR/stop_level"
@@ -304,6 +307,7 @@ bypass_supply_conf() {
 		fi
 		exit 0
 	elif [ "$bypass_supply_mode" = "4" ]; then
+		bypass_supply_type='游戏旁路'
 		bypass_supply_current
 		if [ "$mode" != "9" ]; then
 			echo "9" > "$MODDIR/mode"
@@ -314,12 +318,6 @@ bypass_supply_conf() {
 	else
 		if [ -f "$MODDIR/stop_level" ]; then
 			rm -f "$MODDIR/stop_level"
-		fi
-		if [ "$bypass_max" = "1" ]; then
-			change_current
-		else
-			current_max="-"
-			current_log
 		fi
 	fi
 }
@@ -530,6 +528,14 @@ fps_recovery() {
 		rm -f "$MODDIR/fps"
 	fi
 }
+change_current_log() {
+	if [ "$bypass_max" = "1" ]; then
+		change_current
+	else
+		current_max="-"
+		current_log
+	fi
+}
 stat_decrypt_1="$(stat -c %Y '/data/vendor/thermal/decrypt.txt')"
 global_switch="$(echo "$config_conf" | egrep '^global_switch=' | sed -n 's/global_switch=//g;$p')"
 if [ -f "$MODDIR/disable" -o "$global_switch" = "0" ]; then
@@ -546,7 +552,7 @@ if [ -f "$MODDIR/disable" -o "$global_switch" = "0" ]; then
 	exit 0
 fi
 bypass_supply_app="$(echo "$config_conf" | egrep '^bypass_supply_app=' | sed -n 's/bypass_supply_app=//g;$p')"
-thermal_scene="$(echo "$config_conf" | egrep '^thermal_scene=' | sed -n 's/thermal_scene=//g;$p')"
+thermal_scene="$(echo "$config_conf" | egrep '^thermal_scene=' | sed -n 's/thermal_scene=//g;$p' | cut -d ' ' -f '1')"
 screen_on="$(dumpsys deviceidle get screen)"
 if [ "$screen_on" != 'false' ]; then
 	screen_data=1
@@ -581,6 +587,7 @@ if [ "$screen_on" != 'false' ]; then
 						thermal_scene_c="$(cat "$MODDIR/thermal/$thermal_scene/thermal-scene.conf" | wc -c)"
 						if [ "$thermal_scene_c" -lt "100" ]; then
 							t_blank_conf
+							thermal_scene="-"
 						else
 							thermal_scene_conf
 						fi
@@ -589,6 +596,10 @@ if [ "$screen_on" != 'false' ]; then
 					fi
 				else
 					thermal_app_conf
+					thermal_scene="a"
+				fi
+				if [ "$app_on" = "1" ]; then
+					change_current_log
 				fi
 				exit 0
 			else
@@ -608,10 +619,35 @@ if [ "$dumpsys_charging" = "true" ]; then
 	if [ "$thermal_charge" = "1" ]; then
 		thermal_charge_c="$(cat "$MODDIR/thermal/thermal-charge.conf" | wc -c)"
 		if [ "$thermal_charge_c" -lt "100" ]; then
+			thermal_scene_time_1="$(echo "$config_conf" | egrep '^thermal_scene_time=' | sed -n 's/thermal_scene_time=//g;$p' | cut -d ' ' -f '1')"
+			thermal_scene_time_2="$(echo "$config_conf" | egrep '^thermal_scene_time=' | sed -n 's/thermal_scene_time=//g;$p' | cut -d ' ' -f '2')"
+			thermal_scene_time_3="$(echo "$config_conf" | egrep '^thermal_scene_time=' | sed -n 's/thermal_scene_time=//g;$p' | cut -d ' ' -f '3')"
+			if [ "$thermal_scene_time_1" != "$thermal_scene_time_2" ]; then
+				if [ "$thermal_scene_time_1" -ge "0" -a "$thermal_scene_time_1" -lt "24" -a "$thermal_scene_time_2" -ge "0" -a "$thermal_scene_time_2" -lt "24" -a "$thermal_scene_time_3" -ge "0" ]; then
+					if [ "$thermal_scene_time_1" -gt "$thermal_scene_time_2" ]; then
+						if [ "$(date +%k)" -ge "$thermal_scene_time_1" -o "$(date +%k)" -lt "$thermal_scene_time_2" ]; then
+							thermal_scene="$thermal_scene_time_3"
+							thermal_scene_time_data=1
+						fi
+					elif [ "$thermal_scene_time_1" -lt "$thermal_scene_time_2" ]; then
+						if [ "$(date +%k)" -ge "$thermal_scene_time_1" -a "$(date +%k)" -lt "$thermal_scene_time_2" ]; then
+							thermal_scene="$thermal_scene_time_3"
+							thermal_scene_time_data=1
+						fi
+					fi
+				fi
+			fi
+			if [ "$screen_data" = "0" -a "$thermal_scene_time_data" != "1" ]; then
+				thermal_scene_rest="$(echo "$config_conf" | egrep '^thermal_scene=' | sed -n 's/thermal_scene=//g;$p' | cut -d ' ' -f '2')"
+				if [ -n "$thermal_scene_rest" -a "$thermal_scene_rest" -ge "0" ]; then
+					thermal_scene="$thermal_scene_rest"
+				fi
+			fi
 			if [ "$thermal_scene" -ge "1" ]; then
 				thermal_scene_c="$(cat "$MODDIR/thermal/$thermal_scene/thermal-scene.conf" | wc -c)"
 				if [ "$thermal_scene_c" -lt "100" ]; then
 					t_blank_conf
+					thermal_scene="-"
 				else
 					thermal_scene_conf
 				fi
@@ -620,9 +656,13 @@ if [ "$dumpsys_charging" = "true" ]; then
 			fi
 		else
 			thermal_charge_conf
+			thermal_scene="c"
 		fi
+		change_current_log
 		exit 0
 	fi
+	thermal_scene="--"
+	change_current_log
 else
 	stop_current
 fi
@@ -646,5 +686,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022102500
+#version=2022102800
 # ##
