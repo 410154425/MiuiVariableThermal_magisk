@@ -36,7 +36,7 @@ md5_blank="91bea5a8c97abcc7c2e049c7681dc492"
 t_bypass_0_md5="$(md5sum "$MODDIR/t_bypass_0" | cut -d ' ' -f '1')"
 md5_bypass_0="ef3955675cdf385c34d5deb2f4f9dee8"
 t_bypass_1_md5="$(md5sum "$MODDIR/t_bypass_1" | cut -d ' ' -f '1')"
-md5_bypass_1="30c1a0e556ae3ec6f901e23930e7f603"
+md5_bypass_1="7f0b5d7710040da10d4aaba3ab39700b"
 if [ "$t_blank_md5" != "$md5_blank" -o "$t_bypass_0_md5" != "$md5_bypass_0" -o "$t_bypass_1_md5" != "$md5_bypass_1" ]; then
 	rm -f "$MODDIR/mode"
 	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop"
@@ -217,8 +217,7 @@ bypass_supply_current() {
 			stop_level="$battery_level"
 			echo "$stop_level" > "$MODDIR/stop_level"
 		done
-		stop_level_2="$(( $stop_level - 1 ))"
-		if [ "$battery_level" -lt "$stop_level_2" -o "$battery_level" -lt "3" ]; then
+		if [ "$battery_level" -lt "$stop_level" -o "$battery_level" -lt "3" ]; then
 			md5_bypass="$md5_bypass_1"
 			t_bypass='t_bypass_1'
 		fi
@@ -686,5 +685,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022102800
+#version=2022110800
 # ##

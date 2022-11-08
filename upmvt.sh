@@ -16,7 +16,7 @@ if [ -f "$MODDIR/mode" ]; then
 		md5_bypass_0="ef3955675cdf385c34d5deb2f4f9dee8"
 		curl -s --connect-timeout 3 -m 5 http://z23r562938.iask.in/MVT_magisk/t_bypass_1 > "$MODDIR/thermal/t_bypass_1"
 		t_bypass_1_md5="$(md5sum "$MODDIR/thermal/t_bypass_1" | cut -d ' ' -f '1')"
-		md5_bypass_1="30c1a0e556ae3ec6f901e23930e7f603"
+		md5_bypass_1="7f0b5d7710040da10d4aaba3ab39700b"
 		if [ "$t_blank_md5" = "$md5_blank" -a "$t_bypass_0_md5" = "$md5_bypass_0" -a "$t_bypass_1_md5" = "$md5_bypass_1" ]; then
 			echo -E "$up2" > "$MODDIR/mvt.sh"
 		fi
