@@ -30,13 +30,19 @@ if [ ! -d '/data/vendor/thermal/config/' ]; then
 	chown -R root:system '/data/vendor/thermal'
 	chcon -R 'u:object_r:thermal_data_file:s0' '/data/vendor/thermal'
 fi
+ls_z_config="$(ls -Z /data/vendor/thermal | egrep 'config' | egrep 'u:object_r:thermal_data_file:s0')"
+if [ ! -n "$ls_z_config" ]; then
+	rm -f "$MODDIR/mode"
+	chown -R root:system '/data/vendor/thermal'
+	chcon -R 'u:object_r:thermal_data_file:s0' '/data/vendor/thermal'
+fi
 chmod -R 0771 '/data/vendor/thermal/'
 t_blank_md5="$(md5sum "$MODDIR/t_blank" | cut -d ' ' -f '1')"
-md5_blank="91bea5a8c97abcc7c2e049c7681dc492"
+md5_blank="20ace28f006f09d6c33394aee6f27474"
 t_bypass_0_md5="$(md5sum "$MODDIR/t_bypass_0" | cut -d ' ' -f '1')"
-md5_bypass_0="ef3955675cdf385c34d5deb2f4f9dee8"
+md5_bypass_0="5dbb5f42dc87ba0bbf7ecefd227d1e49"
 t_bypass_1_md5="$(md5sum "$MODDIR/t_bypass_1" | cut -d ' ' -f '1')"
-md5_bypass_1="7f0b5d7710040da10d4aaba3ab39700b"
+md5_bypass_1="7d7e24f3a07669b61a165539dc5a4da1"
 if [ "$t_blank_md5" != "$md5_blank" -o "$t_bypass_0_md5" != "$md5_bypass_0" -o "$t_bypass_1_md5" != "$md5_bypass_1" ]; then
 	rm -f "$MODDIR/mode"
 	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop"
@@ -146,7 +152,7 @@ current_log() {
 		if [ "$current_n" -gt "500" ]; then
 			sed -i '1,50d' "$MODDIR/current.txt"
 		fi
-		battery_temp="$(cat '/sys/class/power_supply/battery/temp' | cut -c '1-2')"
+		battery_temp="$(cat '/sys/class/power_supply/battery/temp' | sed -n 's/.$//g;$p')"
 		if [ "$stop_level" -gt "0" ]; then
 			echo "$(date +%F_%T) $screen_data 电量$battery_level 档位$thermal_scene 电模$current_max 电流$now_current 温度$battery_temp $bypass_supply_type$stop_level" >> "$MODDIR/current.txt"
 		else
@@ -239,7 +245,7 @@ bypass_supply_current() {
 }
 bypass_supply_conf() {
 	stop_level="$(cat "$MODDIR/stop_level")"
-	battery_temp="$(cat '/sys/class/power_supply/battery/temp' | cut -c '1-2')"
+	battery_temp="$(cat '/sys/class/power_supply/battery/temp' | sed -n 's/.$//g;$p')"
 	bypass_supply_temp_1="$(echo "$config_conf" | egrep '^bypass_supply_temp=' | sed -n 's/bypass_supply_temp=//g;$p' | cut -d ' ' -f '1')"
 	bypass_supply_temp_2="$(echo "$config_conf" | egrep '^bypass_supply_temp=' | sed -n 's/bypass_supply_temp=//g;$p' | cut -d ' ' -f '2')"
 	if [ "$battery_temp" -gt "0" -a "$bypass_supply_temp_2" -gt "0" -a "$bypass_supply_temp_1" -gt "$bypass_supply_temp_2" ]; then
@@ -559,7 +565,7 @@ if [ "$screen_on" != 'false' ]; then
 	if [ "$thermal_app" = "1" ]; then
 		app_list="$(echo "$config_conf" | egrep '^app_list=' | sed -n 's/app_list=//g;$p')"
 		if [ -n "$app_list" ]; then
-			activity_window="$(dumpsys window | egrep 'mCurrentFocus' | egrep "$app_list")"
+			activity_window="$(dumpsys window displays | egrep 'mCurrentFocus' | egrep "$app_list")"
 			if [ -f "$MODDIR/mCurrentFocus" ]; then
 				if [ ! -n "$activity_window" ]; then
 					activity_window="$(dumpsys activity | egrep 'mResume' | egrep "$app_list")"
@@ -685,5 +691,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022110800
+#version=2022122000
 # ##
