@@ -38,11 +38,11 @@ if [ ! -n "$ls_z_config" ]; then
 fi
 chmod -R 0771 '/data/vendor/thermal/'
 t_blank_md5="$(md5sum "$MODDIR/t_blank" | cut -d ' ' -f '1')"
-md5_blank="20ace28f006f09d6c33394aee6f27474"
+md5_blank="3df53afc4a859e10bdd1fd2c06a4c5c5"
 t_bypass_0_md5="$(md5sum "$MODDIR/t_bypass_0" | cut -d ' ' -f '1')"
-md5_bypass_0="5dbb5f42dc87ba0bbf7ecefd227d1e49"
+md5_bypass_0="47f6dbe7f36b038ffaa6da4e7c49a340"
 t_bypass_1_md5="$(md5sum "$MODDIR/t_bypass_1" | cut -d ' ' -f '1')"
-md5_bypass_1="7d7e24f3a07669b61a165539dc5a4da1"
+md5_bypass_1="10b6de77d1690992a5229ea109e43cc1"
 if [ "$t_blank_md5" != "$md5_blank" -o "$t_bypass_0_md5" != "$md5_bypass_0" -o "$t_bypass_1_md5" != "$md5_bypass_1" ]; then
 	rm -f "$MODDIR/mode"
 	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop"
@@ -106,7 +106,7 @@ start_thermal_program() {
 				while true ; do
 					rm -f "$MODDIR/mode"
 					rm -f "$MODDIR/max_c"
-					sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则可能系统不支持MIUI云温控，也可能被第三方屏蔽或删除了，请排查模块冲突，重启再试 \]/g' "$MODDIR/module.prop"
+					sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则可能系统不支持MIUI云温控，也可能被第三方屏蔽或删除了，请排查恢复系统温控后再试 \]/g' "$MODDIR/module.prop"
 					chattr -R -i -a '/data/vendor/thermal/'
 					rm -rf '/data/vendor/thermal/'
 					sleep 1
@@ -116,7 +116,7 @@ start_thermal_program() {
 	else
 		rm -f "$MODDIR/mode"
 		rm -f "$MODDIR/max_c"
-		sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则系统温控进程文件被屏蔽或删除了，请恢复重启后再使用 \]/g' "$MODDIR/module.prop"
+		sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则系统温控进程文件被屏蔽或删除了，请排查恢复系统温控后再试 \]/g' "$MODDIR/module.prop"
 		stop "$thermal_program"
 		start "$thermal_program"
 		exit 0
@@ -691,5 +691,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2022122000
+#version=2023011100
 # ##

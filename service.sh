@@ -21,7 +21,7 @@ echo "echo \"正在跳转MIUI动态温控捐赠页面，请稍等。。。\"" >>
 chmod 0755 "$MODDIR/.投币捐赠.sh"
 until [ -d '/data/vendor/thermal/config/' ]; do
 	rm -f "$MODDIR/mode"
-	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则可能系统不支持MIUI云温控，也可能被第三方屏蔽或删除了，请自行排查重启后再试 \]/g' "$MODDIR/module.prop"
+	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则可能系统不支持MIUI云温控，也可能被第三方屏蔽或删除了，请排查恢复系统温控后再使用 \]/g' "$MODDIR/module.prop"
 	sleep 5
 done
 rm -f "$MODDIR/thermal_list"
@@ -33,7 +33,7 @@ thermal_normal="$(cat "$MODDIR/thermal_list")"
 thermal_normal_n="$(echo "$thermal_normal" | egrep -i 'thermal\-' | egrep -i -v '\-map' | wc -l)"
 if [ "$thermal_normal_n" = "0" ]; then
 	rm -f "$MODDIR/mode"
-	sed -i 's/\[.*\]/\[ 没找到MIUI系统默认的温控文件，也可能系统不支持MIUI云温控，请排查恢复后再使用 \]/g' "$MODDIR/module.prop"
+	sed -i 's/\[.*\]/\[ 没找到系统默认的温控文件，也可能系统不支持MIUI云温控，请排查恢复系统温控后再使用 \]/g' "$MODDIR/module.prop"
 	exit 0
 fi
 map_c="$(cat '/system/vendor/etc/thermal-map.conf' | wc -c)"
@@ -45,7 +45,7 @@ if [ "$map_c" -lt "20" -o "$normal_c" -lt "20" -o "$devices_c" -lt "20" ]; then
 		thermal_normal_c="$(cat "/system/vendor/etc/$i" | wc -c)"
 		if [ -f "/system/vendor/etc/$i" -a "$thermal_normal_c" -lt "20" ]; then
 			rm -f "$MODDIR/mode"
-			sed -i 's/\[.*\]/\[ MIUI系统温控文件可能被其它模块用空白文件屏蔽了，请排查温控相关的模块冲突，重启再使用 \]/g' "$MODDIR/module.prop"
+			sed -i 's/\[.*\]/\[ 系统温控文件被屏蔽了，请排查恢复系统温控后再使用 \]/g' "$MODDIR/module.prop"
 			exit 0
 		fi
 	done
@@ -58,7 +58,7 @@ rm -f "$MODDIR/mode"
 rm -f "$MODDIR/max_c"
 rm -f "$MODDIR/stop_level"
 rm -f "$MODDIR/now_c"
-sed -i 's/\[.*\]/\[ 当前温控：- \]/g' "$MODDIR/module.prop"
+sed -i 's/\[.*\]/\[ 当前温控：-未知- \]/g' "$MODDIR/module.prop"
 delete_conf
 up=1
 while true ; do
