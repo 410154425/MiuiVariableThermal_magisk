@@ -38,11 +38,11 @@ if [ ! -n "$ls_z_config" ]; then
 fi
 chmod -R 0771 '/data/vendor/thermal/'
 t_blank_md5="$(md5sum "$MODDIR/t_blank" | cut -d ' ' -f '1')"
-md5_blank="3df53afc4a859e10bdd1fd2c06a4c5c5"
+md5_blank="6e831b0f89e689be10df212262fcda67"
 t_bypass_0_md5="$(md5sum "$MODDIR/t_bypass_0" | cut -d ' ' -f '1')"
-md5_bypass_0="47f6dbe7f36b038ffaa6da4e7c49a340"
+md5_bypass_0="2687f3436843aee381a3c585ab5d386e"
 t_bypass_1_md5="$(md5sum "$MODDIR/t_bypass_1" | cut -d ' ' -f '1')"
-md5_bypass_1="10b6de77d1690992a5229ea109e43cc1"
+md5_bypass_1="5f37a9a755f3cb794ccb446c65afe8b2"
 if [ "$t_blank_md5" != "$md5_blank" -o "$t_bypass_0_md5" != "$md5_bypass_0" -o "$t_bypass_1_md5" != "$md5_bypass_1" ]; then
 	rm -f "$MODDIR/mode"
 	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop"
@@ -691,5 +691,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2023011100
+#version=2023011300
 # ##
