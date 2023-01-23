@@ -38,11 +38,11 @@ if [ ! -n "$ls_z_config" ]; then
 fi
 chmod -R 0771 '/data/vendor/thermal/'
 t_blank_md5="$(md5sum "$MODDIR/t_blank" | cut -d ' ' -f '1')"
-md5_blank="6e831b0f89e689be10df212262fcda67"
+md5_blank="98c1e52f105168b4720f4a79112524e3"
 t_bypass_0_md5="$(md5sum "$MODDIR/t_bypass_0" | cut -d ' ' -f '1')"
-md5_bypass_0="2687f3436843aee381a3c585ab5d386e"
+md5_bypass_0="4552dbc09dd4c9daaa872656fe9de367"
 t_bypass_1_md5="$(md5sum "$MODDIR/t_bypass_1" | cut -d ' ' -f '1')"
-md5_bypass_1="5f37a9a755f3cb794ccb446c65afe8b2"
+md5_bypass_1="7866c9e6c7b1e3adb3b14ee7ffd86d35"
 if [ "$t_blank_md5" != "$md5_blank" -o "$t_bypass_0_md5" != "$md5_bypass_0" -o "$t_bypass_1_md5" != "$md5_bypass_1" ]; then
 	rm -f "$MODDIR/mode"
 	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop"
@@ -80,7 +80,7 @@ program_data() {
 		fi
 	done
 }
-start_thermal_program() {
+pgrep_thermal_program() {
 	which_thermal_1="$(which 'mi_thermald')"
 	which_thermal_2="$(which 'thermal-engine')"
 	if [ -f "$which_thermal_1" ]; then
@@ -94,32 +94,31 @@ start_thermal_program() {
 		exit 0
 	fi
 	thermal_program_id="$(pgrep "$thermal_program")"
-	if [ -n "$thermal_program_id" ]; then
-		program_data
-		if [ "$stat_decrypt_1" = "$stat_decrypt_2" ]; then
-			chown -R root:system '/data/vendor/thermal'
-			chcon -R 'u:object_r:thermal_data_file:s0' '/data/vendor/thermal'
-			stop "$thermal_program"
-			start "$thermal_program"
-			program_data
-			if [ "$stat_decrypt_1" = "$stat_decrypt_2" ]; then
-				while true ; do
-					rm -f "$MODDIR/mode"
-					rm -f "$MODDIR/max_c"
-					sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则可能系统不支持MIUI云温控，也可能被第三方屏蔽或删除了，请排查恢复系统温控后再试 \]/g' "$MODDIR/module.prop"
-					chattr -R -i -a '/data/vendor/thermal/'
-					rm -rf '/data/vendor/thermal/'
-					sleep 1
-				done
-			fi
-		fi
-	else
+	if [ ! -n "$thermal_program_id" ]; then
 		rm -f "$MODDIR/mode"
 		rm -f "$MODDIR/max_c"
 		sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则系统温控进程文件被屏蔽或删除了，请排查恢复系统温控后再试 \]/g' "$MODDIR/module.prop"
+		exit 0
+	fi
+}
+start_thermal_program() {
+	program_data
+	if [ "$stat_decrypt_1" = "$stat_decrypt_2" ]; then
+		chown -R root:system '/data/vendor/thermal'
+		chcon -R 'u:object_r:thermal_data_file:s0' '/data/vendor/thermal'
 		stop "$thermal_program"
 		start "$thermal_program"
-		exit 0
+		program_data
+		if [ "$stat_decrypt_1" = "$stat_decrypt_2" ]; then
+			while true ; do
+				rm -f "$MODDIR/mode"
+				rm -f "$MODDIR/max_c"
+				sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则可能系统不支持MIUI云温控，也可能被第三方屏蔽或删除了，请排查恢复系统温控后再试 \]/g' "$MODDIR/module.prop"
+				chattr -R -i -a '/data/vendor/thermal/'
+				rm -rf '/data/vendor/thermal/'
+				sleep 1
+			done
+		fi
 	fi
 	rm -f '/data/vendor/thermal/config/mvt.conf'
 }
@@ -541,6 +540,7 @@ change_current_log() {
 		current_log
 	fi
 }
+pgrep_thermal_program
 stat_decrypt_1="$(stat -c %Y '/data/vendor/thermal/decrypt.txt')"
 global_switch="$(echo "$config_conf" | egrep '^global_switch=' | sed -n 's/global_switch=//g;$p')"
 if [ -f "$MODDIR/disable" -o "$global_switch" = "0" ]; then
@@ -551,8 +551,8 @@ if [ -f "$MODDIR/disable" -o "$global_switch" = "0" ]; then
 		rm -f "$MODDIR/now_c"
 		thermal_conf
 		echo 'stop' > "$MODDIR/mode"
-		sed -i 's/\[.*\]/\[ 模块已关闭，重启生效 \]/g' "$MODDIR/module.prop"
-		echo "$(date +%F_%T) 模块已关闭，重启生效" >> "$MODDIR/log.log"
+		sed -i 's/\[.*\]/\[ 模块已关闭 \]/g' "$MODDIR/module.prop"
+		echo "$(date +%F_%T) 模块已关闭" >> "$MODDIR/log.log"
 	fi
 	exit 0
 fi
@@ -565,7 +565,12 @@ if [ "$screen_on" != 'false' ]; then
 	if [ "$thermal_app" = "1" ]; then
 		app_list="$(echo "$config_conf" | egrep '^app_list=' | sed -n 's/app_list=//g;$p')"
 		if [ -n "$app_list" ]; then
-			activity_window="$(dumpsys window displays | egrep 'mCurrentFocus' | egrep "$app_list")"
+			dumpsys_window="$(dumpsys window displays | egrep 'mCurrentFocus')"
+			if [ -n "$dumpsys_window" ]; then
+				activity_window="$(echo "$dumpsys_window" | egrep "$app_list")"	
+			else
+				activity_window="$(dumpsys window | egrep 'mCurrentFocus' | egrep "$app_list")"	
+			fi
 			if [ -f "$MODDIR/mCurrentFocus" ]; then
 				if [ ! -n "$activity_window" ]; then
 					activity_window="$(dumpsys activity | egrep 'mResume' | egrep "$app_list")"
@@ -691,5 +696,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2023011300
+#version=2023012300
 # ##
