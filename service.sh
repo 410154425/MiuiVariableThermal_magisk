@@ -20,6 +20,10 @@ echo "am start -n com.tencent.mm/.plugin.webview.ui.tools.WebViewUI -d https://p
 echo "echo \"\"" >> "$MODDIR/.投币捐赠.sh"
 echo "echo \"正在跳转MIUI动态温控捐赠页面，请稍等。。。\"" >> "$MODDIR/.投币捐赠.sh"
 chmod 0755 "$MODDIR/.投币捐赠.sh"
+if [ -f "$MODDIR/t_module" -a "$(cat "$MODDIR/module.prop" | egrep '^# ##' | sed -n '$p')" != '# ##' ]; then
+	cp "$MODDIR/t_module" "$MODDIR/module.prop"
+	chmod 0644 "$MODDIR/module.prop"
+fi
 until [ -d '/data/vendor/thermal/config/' ]; do
 	rm -f "$MODDIR/mode"
 	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则可能系统不支持MIUI云温控，也可能被第三方屏蔽或删除了，请排查恢复系统温控后再使用 \]/g' "$MODDIR/module.prop"
@@ -31,10 +35,10 @@ until [ -f "$MODDIR/thermal_list" ]; do
 	sleep 1
 done
 thermal_normal="$(cat "$MODDIR/thermal_list")"
-thermal_normal_n="$(echo "$thermal_normal" | egrep -i 'thermal\-' | egrep -i -v '\-map' | wc -l)"
+thermal_normal_n="$(echo "$thermal_normal" | egrep -i 'thermal\-' | egrep -i '\-map' | egrep -i -v '\-region\-map' | wc -l)"
 if [ "$thermal_normal_n" = "0" ]; then
 	rm -f "$MODDIR/mode"
-	sed -i 's/\[.*\]/\[ 没找到系统默认的温控文件，也可能系统不支持MIUI云温控，请排查恢复系统温控后再使用 \]/g' "$MODDIR/module.prop"
+	sed -i 's/\[.*\]/\[ 系统不支持MIUI云温控，无法使用 \]/g' "$MODDIR/module.prop"
 	exit 0
 fi
 map_c="$(cat '/system/vendor/etc/thermal-map.conf' | wc -c)"

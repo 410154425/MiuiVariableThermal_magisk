@@ -38,12 +38,14 @@ if [ ! -n "$ls_z_config" ]; then
 fi
 chmod -R 0771 '/data/vendor/thermal/'
 t_blank_md5="$(md5sum "$MODDIR/t_blank" | cut -d ' ' -f '1')"
-md5_blank="98c1e52f105168b4720f4a79112524e3"
+md5_blank="08bb54a57cd0182a1550f00c656bd951"
 t_bypass_0_md5="$(md5sum "$MODDIR/t_bypass_0" | cut -d ' ' -f '1')"
-md5_bypass_0="4552dbc09dd4c9daaa872656fe9de367"
+md5_bypass_0="be2b3602f15442f2530e150695071bfa"
 t_bypass_1_md5="$(md5sum "$MODDIR/t_bypass_1" | cut -d ' ' -f '1')"
-md5_bypass_1="7866c9e6c7b1e3adb3b14ee7ffd86d35"
-if [ "$t_blank_md5" != "$md5_blank" -o "$t_bypass_0_md5" != "$md5_bypass_0" -o "$t_bypass_1_md5" != "$md5_bypass_1" ]; then
+md5_bypass_1="814c73efd5e0cfa95fe5e95f77fbe184"
+t_map_md5="$(md5sum "$MODDIR/t_map" | cut -d ' ' -f '1')"
+md5_map="5423331f5f16e7cf88bbe79f3ee0d65f"
+if [ "$t_blank_md5" != "$md5_blank" -o "$t_bypass_0_md5" != "$md5_bypass_0" -o "$t_bypass_1_md5" != "$md5_bypass_1" -o "$t_map_md5" != "$md5_map" ]; then
 	rm -f "$MODDIR/mode"
 	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop"
 	thermal_t_blank_md5="$(md5sum "$MODDIR/thermal/t_blank" | cut -d ' ' -f '1')"
@@ -57,6 +59,10 @@ if [ "$t_blank_md5" != "$md5_blank" -o "$t_bypass_0_md5" != "$md5_bypass_0" -o "
 	thermal_t_bypass_1_md5="$(md5sum "$MODDIR/thermal/t_bypass_1" | cut -d ' ' -f '1')"
 	if [ -f "$MODDIR/thermal/t_bypass_1" -a "$thermal_t_bypass_1_md5" = "$md5_bypass_1" ]; then
 		cp "$MODDIR/thermal/t_bypass_1" "$MODDIR/t_bypass_1"
+	fi
+	thermal_t_map_md5="$(md5sum "$MODDIR/thermal/t_map" | cut -d ' ' -f '1')"
+	if [ -f "$MODDIR/thermal/t_map" -a "$thermal_t_map_md5" = "$md5_map" ]; then
+		cp "$MODDIR/thermal/t_map" "$MODDIR/t_map"
 	fi
 	exit 0
 fi
@@ -123,20 +129,18 @@ start_thermal_program() {
 	rm -f '/data/vendor/thermal/config/mvt.conf'
 }
 bypass_supply_md5() {
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i -v '\-map')"
+	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/thermal-mvt.conf" | cut -d ' ' -f '1')"
+	if [ "$thermal_config_md5" != "$md5_bypass" ]; then
+		cp "$MODDIR/$t_bypass" "/data/vendor/thermal/config/thermal-mvt.conf"
+		if [ "$thermal_config_md5" != "$md5_bypass_0" -a "$thermal_config_md5" != "$md5_bypass_1" ]; then
+			log_log=1
+		fi
+	fi
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i '\-map' | egrep -i -v '\-region\-map')"
 	for i in $thermal_list ; do
 		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
-		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$md5_bypass" ]; then
-			cp "$MODDIR/$t_bypass" "/data/vendor/thermal/config/$i"
-			if [ "$thermal_config_md5" != "$md5_bypass_0" -a "$thermal_config_md5" != "$md5_bypass_1" ]; then
-				log_log=1
-			fi
-		fi
-	done
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i '\-map')"
-	for i in $thermal_list ; do
-		if [ -f "/data/vendor/thermal/config/$i" ]; then
-			rm -f "/data/vendor/thermal/config/$i"
+		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$md5_map" ]; then
+			cp "$MODDIR/t_map" "/data/vendor/thermal/config/$i"
 			log_log=1
 		fi
 	done
@@ -326,18 +330,16 @@ bypass_supply_conf() {
 	fi
 }
 t_blank_conf() {
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i -v '\-map')"
+	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/thermal-mvt.conf" | cut -d ' ' -f '1')"
+	if [ "$thermal_config_md5" != "$md5_blank" ]; then
+		cp "$MODDIR/t_blank" "/data/vendor/thermal/config/thermal-mvt.conf"
+		log_log=1
+	fi
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i '\-map' | egrep -i -v '\-region\-map')"
 	for i in $thermal_list ; do
 		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
-		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$md5_blank" ]; then
-			cp "$MODDIR/t_blank" "/data/vendor/thermal/config/$i"
-			log_log=1
-		fi
-	done
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i '\-map')"
-	for i in $thermal_list ; do
-		if [ -f "/data/vendor/thermal/config/$i" ]; then
-			rm -f "/data/vendor/thermal/config/$i"
+		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$md5_map" ]; then
+			cp "$MODDIR/t_map" "/data/vendor/thermal/config/$i"
 			log_log=1
 		fi
 	done
@@ -351,18 +353,16 @@ t_blank_conf() {
 }
 thermal_scene_conf() {
 	thermal_scene_md5="$(md5sum "$MODDIR/thermal/$thermal_scene/thermal-scene.conf" | cut -d ' ' -f '1')"
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i -v '\-map')"
+	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/thermal-mvt.conf" | cut -d ' ' -f '1')"
+	if [ "$thermal_config_md5" != "$thermal_scene_md5" ]; then
+		cp "$MODDIR/thermal/$thermal_scene/thermal-scene.conf" "/data/vendor/thermal/config/thermal-mvt.conf"
+		log_log=1
+	fi
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i '\-map' | egrep -i -v '\-region\-map')"
 	for i in $thermal_list ; do
 		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
-		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$thermal_scene_md5" ]; then
-			cp "$MODDIR/thermal/$thermal_scene/thermal-scene.conf" "/data/vendor/thermal/config/$i"
-			log_log=1
-		fi
-	done
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i '\-map')"
-	for i in $thermal_list ; do
-		if [ -f "/data/vendor/thermal/config/$i" ]; then
-			rm -f "/data/vendor/thermal/config/$i"
+		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$md5_map" ]; then
+			cp "$MODDIR/t_map" "/data/vendor/thermal/config/$i"
 			log_log=1
 		fi
 	done
@@ -413,18 +413,16 @@ thermal_scene_conf() {
 }
 thermal_app_conf() {
 	thermal_app_md5="$(md5sum "$MODDIR/thermal/thermal-app.conf" | cut -d ' ' -f '1')"
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i -v '\-map')"
+	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/thermal-mvt.conf" | cut -d ' ' -f '1')"
+	if [ "$thermal_config_md5" != "$thermal_app_md5" ]; then
+		cp "$MODDIR/thermal/thermal-app.conf" "/data/vendor/thermal/config/thermal-mvt.conf"
+		log_log=1
+	fi
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i '\-map' | egrep -i -v '\-region\-map')"
 	for i in $thermal_list ; do
 		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
-		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$thermal_app_md5" ]; then
-			cp "$MODDIR/thermal/thermal-app.conf" "/data/vendor/thermal/config/$i"
-			log_log=1
-		fi
-	done
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i '\-map')"
-	for i in $thermal_list ; do
-		if [ -f "/data/vendor/thermal/config/$i" ]; then
-			rm -f "/data/vendor/thermal/config/$i"
+		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$md5_map" ]; then
+			cp "$MODDIR/t_map" "/data/vendor/thermal/config/$i"
 			log_log=1
 		fi
 	done
@@ -438,18 +436,16 @@ thermal_app_conf() {
 }
 thermal_charge_conf() {
 	thermal_charge_md5="$(md5sum "$MODDIR/thermal/thermal-charge.conf" | cut -d ' ' -f '1')"
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i -v '\-map')"
+	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/thermal-mvt.conf" | cut -d ' ' -f '1')"
+	if [ "$thermal_config_md5" != "$thermal_charge_md5" ]; then
+		cp "$MODDIR/thermal/thermal-charge.conf" "/data/vendor/thermal/config/thermal-mvt.conf"
+		log_log=1
+	fi
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i '\-map' | egrep -i -v '\-region\-map')"
 	for i in $thermal_list ; do
 		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
-		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$thermal_charge_md5" ]; then
-			cp "$MODDIR/thermal/thermal-charge.conf" "/data/vendor/thermal/config/$i"
-			log_log=1
-		fi
-	done
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i '\-map')"
-	for i in $thermal_list ; do
-		if [ -f "/data/vendor/thermal/config/$i" ]; then
-			rm -f "/data/vendor/thermal/config/$i"
+		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$md5_map" ]; then
+			cp "$MODDIR/t_map" "/data/vendor/thermal/config/$i"
 			log_log=1
 		fi
 	done
@@ -463,18 +459,16 @@ thermal_charge_conf() {
 }
 thermal_default_conf() {
 	thermal_default_md5="$(md5sum "$MODDIR/thermal/thermal-default.conf" | cut -d ' ' -f '1')"
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i -v '\-map')"
+	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/thermal-mvt.conf" | cut -d ' ' -f '1')"
+	if [ "$thermal_config_md5" != "$thermal_default_md5" ]; then
+		cp "$MODDIR/thermal/thermal-default.conf" "/data/vendor/thermal/config/thermal-mvt.conf"
+		log_log=1
+	fi
+	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i '\-map' | egrep -i -v '\-region\-map')"
 	for i in $thermal_list ; do
 		thermal_config_md5="$(md5sum "/data/vendor/thermal/config/$i" | cut -d ' ' -f '1')"
-		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$thermal_default_md5" ]; then
-			cp "$MODDIR/thermal/thermal-default.conf" "/data/vendor/thermal/config/$i"
-			log_log=1
-		fi
-	done
-	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i '\-map')"
-	for i in $thermal_list ; do
-		if [ -f "/data/vendor/thermal/config/$i" ]; then
-			rm -f "/data/vendor/thermal/config/$i"
+		if [ -f "/system/vendor/etc/$i" -a "$thermal_config_md5" != "$md5_map" ]; then
+			cp "$MODDIR/t_map" "/data/vendor/thermal/config/$i"
 			log_log=1
 		fi
 	done
@@ -696,5 +690,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2023012300
+#version=2023020900
 # ##
