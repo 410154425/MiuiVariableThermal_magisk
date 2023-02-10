@@ -567,7 +567,7 @@ if [ "$screen_on" != 'false' ]; then
 			fi
 			if [ -f "$MODDIR/mCurrentFocus" ]; then
 				if [ ! -n "$activity_window" ]; then
-					activity_window="$(dumpsys activity | egrep 'mResume' | egrep "$app_list")"
+					activity_window="$(dumpsys activity | egrep 'mResumedActivity|mTopFullscreen' | egrep "$app_list")"
 				fi
 			fi
 			if [ -n "$activity_window" ]; then
@@ -690,5 +690,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2023020900
+#version=2023021000
 # ##

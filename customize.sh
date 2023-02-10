@@ -1,4 +1,5 @@
 chmod 0000 '/data/adb/modules/MiuiVariableThermal/mvt.sh'
+cp "$MODPATH/module.prop" "$MODPATH/t_module"
 ui_print " -------------------------- "
 ui_print " ------ 安装中，请稍等 ------ "
 sleep 1

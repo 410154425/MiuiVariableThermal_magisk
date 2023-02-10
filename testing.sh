@@ -11,8 +11,8 @@ global_switch="$(echo "$config_conf" | egrep '^global_switch=' | sed -n 's/globa
 echo --------- 版本 ----------
 echo "$module_version ,$module_versionCode"
 echo --------- 适配 ----------
-dumpsys activity | egrep 'mResume'
 dumpsys window | egrep 'mCurrentFocus'
+dumpsys activity | egrep 'mResumedActivity|mTopFullscreen'
 echo "$state"
 thermal_program="mi_thermald thermal-engine thermal-engine-v2 thermalserviced"
 for i in $thermal_program ; do
