@@ -231,12 +231,18 @@ bypass_supply_current() {
 			t_bypass='t_bypass_1'
 		fi
 		if [ "$bypass_max" = "1" ]; then
-			md5_bypass="$md5_bypass_1"
-			t_bypass='t_bypass_1'
-			if [ "$battery_level" -gt "$stop_level" -o "$battery_level" = "100" ]; then
-				current_max="0"
-			elif [ "$battery_level" = "$stop_level" ]; then
-				current_max="100000"
+			if [ "$stop_level" = "100" ]; then
+				if [ "$battery_level" = "100" ]; then
+					current_max="0"
+				elif [ "$battery_level" = "99" ]; then
+					current_max="100000"
+				fi
+			else
+				if [ "$battery_level" -gt "$stop_level" ]; then
+					current_max="0"
+				elif [ "$battery_level" = "$stop_level" ]; then
+					current_max="100000"
+				fi
 			fi
 			change_current
 		else
@@ -272,9 +278,9 @@ bypass_supply_conf() {
 		else
 			bypass_supply_level="$(echo "$config_conf" | egrep '^bypass_supply_level=' | sed -n 's/bypass_supply_level=//g;$p')"
 			bypass_supply_level_2="$(( $bypass_supply_level - 1 ))"
-			if [ "$battery_level" -ge "$bypass_supply_level" -a "$bypass_supply_level" -gt "2" ]; then
+			if [ "$battery_level" -ge "$bypass_supply_level" -a "$bypass_supply_level" -gt "2" -a "$bypass_supply_level" -le "100" ]; then
 				bypass_supply_mode=3
-			elif [ "$bypass_max" = "0" -a "$battery_level" = "$bypass_supply_level_2" -a "$bypass_supply_level" -gt "2" ]; then
+			elif [ "$battery_level" = "$bypass_supply_level_2" -a "$bypass_supply_level" -gt "2" -a "$bypass_supply_level" -le "100" ]; then
 				md5_bypass="$md5_bypass_1"
 				t_bypass='t_bypass_1'
 				bypass_supply_mode=3
@@ -690,5 +696,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2023021000
+#version=2023021200
 # ##
