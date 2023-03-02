@@ -127,6 +127,29 @@ start_thermal_program() {
 		fi
 	fi
 	rm -f '/data/vendor/thermal/config/mvt.conf'
+	time_now="$(date +%s)"
+	if [ "$time_mode" = "$(cat "$MODDIR/time_log" | sed -n '$p' | cut -d ' ' -f '2')" ]; then
+		echo "$time_now $time_mode" >> "$MODDIR/time_log"
+	else
+		echo "$time_now $time_mode" > "$MODDIR/time_log"
+	fi
+	time_mode_n="$(cat "$MODDIR/time_log" | wc -l)"
+	if [ "$time_mode_n" -gt "10" ]; then
+		sed -i "1,$(( $time_mode_n - 10 ))d" "$MODDIR/time_log"
+	fi
+	time_mode_n="$(cat "$MODDIR/time_log" | wc -l)"
+	if [ "$time_mode_n" = "10" ]; then
+		time_s="$(cat "$MODDIR/time_log" | sed -n '1p' | cut -d ' ' -f '1')"
+		if [ "$time_now" -lt "$(( $time_s + 120 ))" -a "$time_now" -gt "$time_s" ]; then
+			while true ; do
+				rm -f "$MODDIR/mode"
+				rm -f "$MODDIR/max_c"
+				rm -f "$MODDIR/time_log"
+				sed -i 's/\[.*\]/\[ 有持续性第三方冲突，请排查移除冲突后重启再试 \]/g' "$MODDIR/module.prop"
+				sleep 1
+			done
+		fi
+	fi
 }
 bypass_supply_md5() {
 	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/thermal-mvt.conf" | cut -d ' ' -f '1')"
@@ -294,6 +317,7 @@ bypass_supply_conf() {
 	mode="$(cat "$MODDIR/mode")"
 	if [ "$bypass_supply_mode" = "1" ]; then
 		bypass_supply_type='温度旁路'
+		time_mode=6
 		bypass_supply_current
 		if [ "$mode" != "6" ]; then
 			echo "6" > "$MODDIR/mode"
@@ -303,6 +327,7 @@ bypass_supply_conf() {
 		exit 0
 	elif [ "$bypass_supply_mode" = "2" ]; then
 		bypass_supply_type='手动旁路'
+		time_mode=7
 		bypass_supply_current
 		if [ "$mode" != "7" ]; then
 			echo "7" > "$MODDIR/mode"
@@ -312,6 +337,7 @@ bypass_supply_conf() {
 		exit 0
 	elif [ "$bypass_supply_mode" = "3" ]; then
 		bypass_supply_type='电量旁路'
+		time_mode=8
 		bypass_supply_current
 		if [ "$mode" != "8" ]; then
 			rm -f "$MODDIR/stop_level"
@@ -322,6 +348,7 @@ bypass_supply_conf() {
 		exit 0
 	elif [ "$bypass_supply_mode" = "4" ]; then
 		bypass_supply_type='游戏旁路'
+		time_mode=9
 		bypass_supply_current
 		if [ "$mode" != "9" ]; then
 			echo "9" > "$MODDIR/mode"
@@ -351,6 +378,7 @@ t_blank_conf() {
 	done
 	mode="$(cat "$MODDIR/mode")"
 	if [ "$log_log" = "1" -o "$mode" != "5" ]; then
+		time_mode=5
 		start_thermal_program
 		echo "5" > "$MODDIR/mode"
 		sed -i 's/\[.*\]/\[ 当前温控：零档-无限制 \]/g' "$MODDIR/module.prop"
@@ -375,6 +403,7 @@ thermal_scene_conf() {
 	mode="$(cat "$MODDIR/mode")"
 	if [ "$thermal_scene" = "1" ]; then
 		if [ "$log_log" = "1" -o "$mode" != "11" ]; then
+			time_mode=11
 			start_thermal_program
 			echo "11" > "$MODDIR/mode"
 			sed -i 's/\[.*\]/\[ 当前温控：一档-无限制 \]/g' "$MODDIR/module.prop"
@@ -382,6 +411,7 @@ thermal_scene_conf() {
 		fi
 	elif [ "$thermal_scene" = "2" ]; then
 		if [ "$log_log" = "1" -o "$mode" != "12" ]; then
+			time_mode=12
 			start_thermal_program
 			echo "12" > "$MODDIR/mode"
 			sed -i 's/\[.*\]/\[ 当前温控：二档-无限制 \]/g' "$MODDIR/module.prop"
@@ -389,6 +419,7 @@ thermal_scene_conf() {
 		fi
 	elif [ "$thermal_scene" = "3" ]; then
 		if [ "$log_log" = "1" -o "$mode" != "13" ]; then
+			time_mode=13
 			start_thermal_program
 			echo "13" > "$MODDIR/mode"
 			sed -i 's/\[.*\]/\[ 当前温控：三档-无限制 \]/g' "$MODDIR/module.prop"
@@ -396,6 +427,7 @@ thermal_scene_conf() {
 		fi
 	elif [ "$thermal_scene" = "4" ]; then
 		if [ "$log_log" = "1" -o "$mode" != "14" ]; then
+			time_mode=14
 			start_thermal_program
 			echo "14" > "$MODDIR/mode"
 			sed -i 's/\[.*\]/\[ 当前温控：四档-无限制 \]/g' "$MODDIR/module.prop"
@@ -403,6 +435,7 @@ thermal_scene_conf() {
 		fi
 	elif [ "$thermal_scene" = "5" ]; then
 		if [ "$log_log" = "1" -o "$mode" != "15" ]; then
+			time_mode=15
 			start_thermal_program
 			echo "15" > "$MODDIR/mode"
 			sed -i 's/\[.*\]/\[ 当前温控：五档-无限制 \]/g' "$MODDIR/module.prop"
@@ -410,6 +443,7 @@ thermal_scene_conf() {
 		fi
 	else
 		if [ "$log_log" = "1" -o "$mode" != "10" ]; then
+			time_mode=10
 			start_thermal_program
 			echo "10" > "$MODDIR/mode"
 			sed -i 's/\[.*\]/\[ 当前温控：其它-无限制 \]/g' "$MODDIR/module.prop"
@@ -434,6 +468,7 @@ thermal_app_conf() {
 	done
 	mode="$(cat "$MODDIR/mode")"
 	if [ "$log_log" = "1" -o "$mode" != "4" ]; then
+		time_mode=4
 		start_thermal_program
 		echo "4" > "$MODDIR/mode"
 		sed -i 's/\[.*\]/\[ 当前温控：thermal-app.conf \]/g' "$MODDIR/module.prop"
@@ -457,6 +492,7 @@ thermal_charge_conf() {
 	done
 	mode="$(cat "$MODDIR/mode")"
 	if [ "$log_log" = "1" -o "$mode" != "3" ]; then
+		time_mode=3
 		start_thermal_program
 		echo "3" > "$MODDIR/mode"
 		sed -i 's/\[.*\]/\[ 当前温控：thermal-charge.conf \]/g' "$MODDIR/module.prop"
@@ -480,6 +516,7 @@ thermal_default_conf() {
 	done
 	mode="$(cat "$MODDIR/mode")"
 	if [ "$log_log" = "1" -o "$mode" != "2" ]; then
+		time_mode=2
 		start_thermal_program
 		echo "2" > "$MODDIR/mode"
 		sed -i 's/\[.*\]/\[ 当前温控：thermal-default.conf \]/g' "$MODDIR/module.prop"
@@ -494,6 +531,7 @@ thermal_conf() {
 	fi
 	mode="$(cat "$MODDIR/mode")"
 	if [ "$log_log" = "1" -o "$mode" != "1" ]; then
+		time_mode=1
 		start_thermal_program
 		echo "1" > "$MODDIR/mode"
 		sed -i 's/\[.*\]/\[ 当前温控：系统默认 \]/g' "$MODDIR/module.prop"
@@ -696,5 +734,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2023021200
+#version=2023030200
 # ##

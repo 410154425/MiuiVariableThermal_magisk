@@ -63,6 +63,7 @@ rm -f "$MODDIR/mode"
 rm -f "$MODDIR/max_c"
 rm -f "$MODDIR/stop_level"
 rm -f "$MODDIR/now_c"
+rm -f "$MODDIR/time_log"
 sed -i 's/\[.*\]/\[ 当前温控：-未知- \]/g' "$MODDIR/module.prop"
 delete_conf
 up=1
