@@ -275,6 +275,24 @@ bypass_supply_current() {
 	fi
 	bypass_supply_md5
 }
+bypass_supply_level_time() {
+	bypass_level_data=1
+	bypass_level_time_1="$(echo "$config_conf" | egrep '^bypass_level_time=' | sed -n 's/bypass_level_time=//g;$p' | cut -d ' ' -f '1')"
+	bypass_level_time_2="$(echo "$config_conf" | egrep '^bypass_level_time=' | sed -n 's/bypass_level_time=//g;$p' | cut -d ' ' -f '2')"
+	if [ "$bypass_level_time_1" != "$bypass_level_time_2" ]; then
+		if [ "$bypass_level_time_1" -ge "0" -a "$bypass_level_time_1" -lt "24" -a "$bypass_level_time_2" -ge "0" -a "$bypass_level_time_2" -lt "24" ]; then
+			if [ "$bypass_level_time_1" -gt "$bypass_level_time_2" ]; then
+				if [ "$(date +%k)" -lt "$bypass_level_time_1" -a "$(date +%k)" -ge "$bypass_level_time_2" ]; then
+					bypass_level_data=0
+				fi
+			elif [ "$bypass_level_time_1" -lt "$bypass_level_time_2" ]; then
+				if [ "$(date +%k)" -lt "$bypass_level_time_1" -o "$(date +%k)" -ge "$bypass_level_time_2" ]; then
+					bypass_level_data=0
+				fi
+			fi
+		fi
+	fi
+}
 bypass_supply_conf() {
 	stop_level="$(cat "$MODDIR/stop_level")"
 	battery_temp="$(cat '/sys/class/power_supply/battery/temp' | sed -n 's/.$//g;$p')"
@@ -299,11 +317,12 @@ bypass_supply_conf() {
 		if [ -f "$MODDIR/on_bypass" ]; then
 			bypass_supply_mode=2
 		else
+			bypass_supply_level_time
 			bypass_supply_level="$(echo "$config_conf" | egrep '^bypass_supply_level=' | sed -n 's/bypass_supply_level=//g;$p')"
 			bypass_supply_level_2="$(( $bypass_supply_level - 1 ))"
-			if [ "$battery_level" -ge "$bypass_supply_level" -a "$bypass_supply_level" -gt "2" -a "$bypass_supply_level" -le "100" ]; then
+			if [ "$battery_level" -ge "$bypass_supply_level" -a "$bypass_supply_level" -gt "2" -a "$bypass_supply_level" -le "100" -a "$bypass_level_data" = "1" ]; then
 				bypass_supply_mode=3
-			elif [ "$battery_level" = "$bypass_supply_level_2" -a "$bypass_supply_level" -gt "2" -a "$bypass_supply_level" -le "100" ]; then
+			elif [ "$battery_level" = "$bypass_supply_level_2" -a "$bypass_supply_level" -gt "2" -a "$bypass_supply_level" -le "100" -a "$bypass_level_data" = "1" ]; then
 				md5_bypass="$md5_bypass_1"
 				t_bypass='t_bypass_1'
 				bypass_supply_mode=3
@@ -578,7 +597,10 @@ change_current_log() {
 		current_log
 	fi
 }
-pgrep_thermal_program
+mode="$(cat "$MODDIR/mode")"
+if [ "$mode" != 'stop' ]; then
+	pgrep_thermal_program
+fi
 stat_decrypt_1="$(stat -c %Y '/data/vendor/thermal/decrypt.txt')"
 global_switch="$(echo "$config_conf" | egrep '^global_switch=' | sed -n 's/global_switch=//g;$p')"
 if [ -f "$MODDIR/disable" -o "$global_switch" = "0" ]; then
@@ -667,6 +689,7 @@ if [ "$dumpsys_charging" = "true" ]; then
 	if [ "$thermal_charge" = "1" ]; then
 		thermal_charge_c="$(cat "$MODDIR/thermal/thermal-charge.conf" | wc -c)"
 		if [ "$thermal_charge_c" -lt "100" ]; then
+			thermal_scene_time_data=0
 			thermal_scene_time_1="$(echo "$config_conf" | egrep '^thermal_scene_time=' | sed -n 's/thermal_scene_time=//g;$p' | cut -d ' ' -f '1')"
 			thermal_scene_time_2="$(echo "$config_conf" | egrep '^thermal_scene_time=' | sed -n 's/thermal_scene_time=//g;$p' | cut -d ' ' -f '2')"
 			thermal_scene_time_3="$(echo "$config_conf" | egrep '^thermal_scene_time=' | sed -n 's/thermal_scene_time=//g;$p' | cut -d ' ' -f '3')"
@@ -734,5 +757,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2023030200
+#version=2023030600
 # ##

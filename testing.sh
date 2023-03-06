@@ -65,10 +65,11 @@ if [ -f "$MODDIR/stop_level" ]; then
 	stop_level="$(cat "$MODDIR/stop_level")"
 fi
 bypass_supply_level="$(echo "$config_conf" | egrep '^bypass_supply_level=' | sed -n 's/bypass_supply_level=//g;$p')"
+bypass_level_time="$(echo "$config_conf" | egrep '^bypass_level_time=' | sed -n 's/bypass_level_time=//g;$p')"
 battery_temp="$(cat '/sys/class/power_supply/battery/temp' | sed -n 's/.$//g;$p')"
 bypass_supply_temp="$(echo "$config_conf" | egrep '^bypass_supply_temp=' | sed -n 's/bypass_supply_temp=//g;$p')"
 bypass_supply_app="$(echo "$config_conf" | egrep '^bypass_supply_app=' | sed -n 's/bypass_supply_app=//g;$p')"
-echo "模式$mode 充电档位$thermal_scene 时间档位$thermal_scene_time 充电场景$thermal_charge 游戏场景$thermal_app 刷新率$fps 电流模式$current_max 电流$current_now 充电状态$dumpsys_charging,$dumpsys_powered,$battery_status 电量$battery_level 电量旁路$bypass_supply_level 温度$battery_temp 温度旁路$bypass_supply_temp 游戏旁路$bypass_supply_app 手动旁路$bypass_supply_mode 旁停$stop_level 版本$module_version"
+echo "模式$mode 充电档位$thermal_scene 时间档位$thermal_scene_time 充电场景$thermal_charge 游戏场景$thermal_app 刷新率$fps 电流模式$current_max 电流$current_now 充电状态$dumpsys_charging,$dumpsys_powered,$battery_status 电量$battery_level 电量旁路$bypass_supply_level $bypass_level_time 温度$battery_temp 温度旁路$bypass_supply_temp 游戏旁路$bypass_supply_app 手动旁路$bypass_supply_mode 旁停$stop_level 版本$module_version"
 echo --------- 电流节点 ----------
 battery_current_list="/sys/class/power_supply/battery/constant_charge_current_max /sys/class/power_supply/battery/constant_charge_current /sys/class/power_supply/battery/fast_charge_current /sys/class/power_supply/battery/thermal_input_current /sys/class/power_supply/battery/current_max"
 for i in $battery_current_list ; do
@@ -102,7 +103,7 @@ if [ -f "$MODDIR/disable" -o "$global_switch" = "0" ]; then
 fi
 if [ "$thermal_app" = "1" ]; then
 	app_list="$(echo "$config_conf" | egrep '^app_list=' | sed -n 's/app_list=//g;$p')"
-	activity_window="$(dumpsys activity | egrep 'mResume' | egrep "$app_list")"
+	activity_window="$(dumpsys activity | egrep 'mResumedActivity|mTopFullscreen' | egrep "$app_list")"
 	if [ -n "$app_list" -a -n "$activity_window" ]; then
 		echo --------- 游戏场景 ----------
 		thermal_app_c="$(cat "$MODDIR/thermal/thermal-app.conf" | wc -c)"
