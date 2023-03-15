@@ -11,25 +11,25 @@ if [ -f "$MODDIR/mode" ]; then
 		sed -i "s/^version=.*/version=${module_version}/g" "$MODDIR/module.prop"
 		sed -i "s/^name=.*/name=${module_name}/g" "$MODDIR/module.prop"
 		t_blank_md5="$(md5sum "$MODDIR/thermal/t_blank" | cut -d ' ' -f '1')"
-		md5_blank="08bb54a57cd0182a1550f00c656bd951"
+		md5_blank="de59942d3dffc090f0dae74dfc4d47ce"
 		if [ "$t_blank_md5" != "$md5_blank" ]; then
 			curl -s --connect-timeout 3 -m 5 "$update_curl/t_blank" > "$MODDIR/thermal/t_blank"
 			t_blank_md5="$(md5sum "$MODDIR/thermal/t_blank" | cut -d ' ' -f '1')"
 		fi
 		t_bypass_0_md5="$(md5sum "$MODDIR/thermal/t_bypass_0" | cut -d ' ' -f '1')"
-		md5_bypass_0="be2b3602f15442f2530e150695071bfa"
+		md5_bypass_0="006bb13431c52592192e710e46e76879"
 		if [ "$t_bypass_0_md5" != "$md5_bypass_0" ]; then
 			curl -s --connect-timeout 3 -m 5 "$update_curl/t_bypass_0" > "$MODDIR/thermal/t_bypass_0"
 			t_bypass_0_md5="$(md5sum "$MODDIR/thermal/t_bypass_0" | cut -d ' ' -f '1')"
 		fi
 		t_bypass_1_md5="$(md5sum "$MODDIR/thermal/t_bypass_1" | cut -d ' ' -f '1')"
-		md5_bypass_1="814c73efd5e0cfa95fe5e95f77fbe184"
+		md5_bypass_1="959b4f8711503653abea8a019936ab2c"
 		if [ "$t_bypass_1_md5" != "$md5_bypass_1" ]; then
 			curl -s --connect-timeout 3 -m 5 "$update_curl/t_bypass_1" > "$MODDIR/thermal/t_bypass_1"
 			t_bypass_1_md5="$(md5sum "$MODDIR/thermal/t_bypass_1" | cut -d ' ' -f '1')"
 		fi
 		t_map_md5="$(md5sum "$MODDIR/thermal/t_map" | cut -d ' ' -f '1')"
-		md5_map="5423331f5f16e7cf88bbe79f3ee0d65f"
+		md5_map="43b4b914ef6b45119bbfe2030e4025a7"
 		if [ "$t_map_md5" != "$md5_map" ]; then
 			curl -s --connect-timeout 3 -m 5 "$update_curl/t_map" > "$MODDIR/thermal/t_map"
 			t_map_md5="$(md5sum "$MODDIR/thermal/t_map" | cut -d ' ' -f '1')"

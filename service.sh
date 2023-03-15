@@ -26,7 +26,7 @@ if [ -f "$MODDIR/t_module" -a "$(cat "$MODDIR/module.prop" | egrep '^# ##' | sed
 fi
 until [ -d '/data/vendor/thermal/config/' ]; do
 	rm -f "$MODDIR/mode"
-	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则可能系统不支持MIUI云温控，也可能被第三方屏蔽或删除了，请排查恢复系统温控后再使用 \]/g' "$MODDIR/module.prop"
+	sed -i 's/\[.*\]/\[ 可能机型不支持，无法使用，也可能有冲突，请排查移除冲突后重启再试 \]/g' "$MODDIR/module.prop"
 	sleep 5
 done
 rm -f "$MODDIR/thermal_list"

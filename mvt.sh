@@ -38,13 +38,13 @@ if [ ! -n "$ls_z_config" ]; then
 fi
 chmod -R 0771 '/data/vendor/thermal/'
 t_blank_md5="$(md5sum "$MODDIR/t_blank" | cut -d ' ' -f '1')"
-md5_blank="08bb54a57cd0182a1550f00c656bd951"
+md5_blank="de59942d3dffc090f0dae74dfc4d47ce"
 t_bypass_0_md5="$(md5sum "$MODDIR/t_bypass_0" | cut -d ' ' -f '1')"
-md5_bypass_0="be2b3602f15442f2530e150695071bfa"
+md5_bypass_0="006bb13431c52592192e710e46e76879"
 t_bypass_1_md5="$(md5sum "$MODDIR/t_bypass_1" | cut -d ' ' -f '1')"
-md5_bypass_1="814c73efd5e0cfa95fe5e95f77fbe184"
+md5_bypass_1="959b4f8711503653abea8a019936ab2c"
 t_map_md5="$(md5sum "$MODDIR/t_map" | cut -d ' ' -f '1')"
-md5_map="5423331f5f16e7cf88bbe79f3ee0d65f"
+md5_map="43b4b914ef6b45119bbfe2030e4025a7"
 if [ "$t_blank_md5" != "$md5_blank" -o "$t_bypass_0_md5" != "$md5_bypass_0" -o "$t_bypass_1_md5" != "$md5_bypass_1" -o "$t_map_md5" != "$md5_map" ]; then
 	rm -f "$MODDIR/mode"
 	sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则模块文件错误，请重新安装模块重启 \]/g' "$MODDIR/module.prop"
@@ -103,7 +103,7 @@ pgrep_thermal_program() {
 	if [ ! -n "$thermal_program_id" ]; then
 		rm -f "$MODDIR/mode"
 		rm -f "$MODDIR/max_c"
-		sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则系统温控进程文件被屏蔽或删除了，请排查恢复系统温控后再试 \]/g' "$MODDIR/module.prop"
+		sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则系统温控进程文件被屏蔽或删除了，请排查移除冲突后重启再试 \]/g' "$MODDIR/module.prop"
 		exit 0
 	fi
 }
@@ -119,7 +119,7 @@ start_thermal_program() {
 			while true ; do
 				rm -f "$MODDIR/mode"
 				rm -f "$MODDIR/max_c"
-				sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则可能系统不支持MIUI云温控，也可能被第三方屏蔽或删除了，请排查恢复系统温控后再试 \]/g' "$MODDIR/module.prop"
+				sed -i 's/\[.*\]/\[ 可能系统不支持，无法使用，也可能有冲突，请排查移除冲突后重启再试 \]/g' "$MODDIR/module.prop"
 				chattr -R -i -a '/data/vendor/thermal/'
 				rm -rf '/data/vendor/thermal/'
 				sleep 1
@@ -152,9 +152,9 @@ start_thermal_program() {
 	fi
 }
 bypass_supply_md5() {
-	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/thermal-mvt.conf" | cut -d ' ' -f '1')"
+	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/thermal-normal.conf" | cut -d ' ' -f '1')"
 	if [ "$thermal_config_md5" != "$md5_bypass" ]; then
-		cp "$MODDIR/$t_bypass" "/data/vendor/thermal/config/thermal-mvt.conf"
+		cp "$MODDIR/$t_bypass" "/data/vendor/thermal/config/thermal-normal.conf"
 		if [ "$thermal_config_md5" != "$md5_bypass_0" -a "$thermal_config_md5" != "$md5_bypass_1" ]; then
 			log_log=1
 		fi
@@ -382,9 +382,9 @@ bypass_supply_conf() {
 	fi
 }
 t_blank_conf() {
-	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/thermal-mvt.conf" | cut -d ' ' -f '1')"
+	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/thermal-normal.conf" | cut -d ' ' -f '1')"
 	if [ "$thermal_config_md5" != "$md5_blank" ]; then
-		cp "$MODDIR/t_blank" "/data/vendor/thermal/config/thermal-mvt.conf"
+		cp "$MODDIR/t_blank" "/data/vendor/thermal/config/thermal-normal.conf"
 		log_log=1
 	fi
 	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i '\-map' | egrep -i -v '\-region\-map')"
@@ -406,9 +406,9 @@ t_blank_conf() {
 }
 thermal_scene_conf() {
 	thermal_scene_md5="$(md5sum "$MODDIR/thermal/$thermal_scene/thermal-scene.conf" | cut -d ' ' -f '1')"
-	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/thermal-mvt.conf" | cut -d ' ' -f '1')"
+	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/thermal-normal.conf" | cut -d ' ' -f '1')"
 	if [ "$thermal_config_md5" != "$thermal_scene_md5" ]; then
-		cp "$MODDIR/thermal/$thermal_scene/thermal-scene.conf" "/data/vendor/thermal/config/thermal-mvt.conf"
+		cp "$MODDIR/thermal/$thermal_scene/thermal-scene.conf" "/data/vendor/thermal/config/thermal-normal.conf"
 		log_log=1
 	fi
 	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i '\-map' | egrep -i -v '\-region\-map')"
@@ -472,9 +472,9 @@ thermal_scene_conf() {
 }
 thermal_app_conf() {
 	thermal_app_md5="$(md5sum "$MODDIR/thermal/thermal-app.conf" | cut -d ' ' -f '1')"
-	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/thermal-mvt.conf" | cut -d ' ' -f '1')"
+	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/thermal-normal.conf" | cut -d ' ' -f '1')"
 	if [ "$thermal_config_md5" != "$thermal_app_md5" ]; then
-		cp "$MODDIR/thermal/thermal-app.conf" "/data/vendor/thermal/config/thermal-mvt.conf"
+		cp "$MODDIR/thermal/thermal-app.conf" "/data/vendor/thermal/config/thermal-normal.conf"
 		log_log=1
 	fi
 	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i '\-map' | egrep -i -v '\-region\-map')"
@@ -496,9 +496,9 @@ thermal_app_conf() {
 }
 thermal_charge_conf() {
 	thermal_charge_md5="$(md5sum "$MODDIR/thermal/thermal-charge.conf" | cut -d ' ' -f '1')"
-	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/thermal-mvt.conf" | cut -d ' ' -f '1')"
+	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/thermal-normal.conf" | cut -d ' ' -f '1')"
 	if [ "$thermal_config_md5" != "$thermal_charge_md5" ]; then
-		cp "$MODDIR/thermal/thermal-charge.conf" "/data/vendor/thermal/config/thermal-mvt.conf"
+		cp "$MODDIR/thermal/thermal-charge.conf" "/data/vendor/thermal/config/thermal-normal.conf"
 		log_log=1
 	fi
 	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i '\-map' | egrep -i -v '\-region\-map')"
@@ -520,9 +520,9 @@ thermal_charge_conf() {
 }
 thermal_default_conf() {
 	thermal_default_md5="$(md5sum "$MODDIR/thermal/thermal-default.conf" | cut -d ' ' -f '1')"
-	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/thermal-mvt.conf" | cut -d ' ' -f '1')"
+	thermal_config_md5="$(md5sum "/data/vendor/thermal/config/thermal-normal.conf" | cut -d ' ' -f '1')"
 	if [ "$thermal_config_md5" != "$thermal_default_md5" ]; then
-		cp "$MODDIR/thermal/thermal-default.conf" "/data/vendor/thermal/config/thermal-mvt.conf"
+		cp "$MODDIR/thermal/thermal-default.conf" "/data/vendor/thermal/config/thermal-normal.conf"
 		log_log=1
 	fi
 	thermal_list="$(cat "$MODDIR/thermal_list" | egrep -i 'thermal\-' | egrep -i '\-map' | egrep -i -v '\-region\-map')"
@@ -757,5 +757,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2023030600
+#version=2023031500
 # ##
