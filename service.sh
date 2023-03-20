@@ -24,11 +24,6 @@ if [ -f "$MODDIR/t_module" -a "$(cat "$MODDIR/module.prop" | egrep '^# ##' | sed
 	cp "$MODDIR/t_module" "$MODDIR/module.prop"
 	chmod 0644 "$MODDIR/module.prop"
 fi
-until [ -d '/data/vendor/thermal/config/' ]; do
-	rm -f "$MODDIR/mode"
-	sed -i 's/\[.*\]/\[ 可能机型不支持，无法使用，也可能有冲突，请排查移除冲突后重启再试 \]/g' "$MODDIR/module.prop"
-	sleep 5
-done
 rm -f "$MODDIR/thermal_list"
 until [ -f "$MODDIR/thermal_list" ]; do
 	find /system/vendor/etc -type f -iname "thermal*.conf" | sed -n 's/\/system\/vendor\/etc\///g;p' | egrep -v '\/' > "$MODDIR/thermal_list"
@@ -38,7 +33,7 @@ thermal_normal="$(cat "$MODDIR/thermal_list")"
 thermal_normal_n="$(echo "$thermal_normal" | egrep -i 'thermal\-' | egrep -i '\-map' | egrep -i -v '\-region\-map' | wc -l)"
 if [ "$thermal_normal_n" = "0" ]; then
 	rm -f "$MODDIR/mode"
-	sed -i 's/\[.*\]/\[ 系统不支持MIUI云温控，无法使用 \]/g' "$MODDIR/module.prop"
+	sed -i 's/\[.*\]/\[ 机型或系统不支持，无法使用 \]/g' "$MODDIR/module.prop"
 	exit 0
 fi
 map_c="$(cat '/system/vendor/etc/thermal-map.conf' | wc -c)"
@@ -56,7 +51,7 @@ if [ "$map_c" -lt "20" -o "$normal_c" -lt "20" -o "$devices_c" -lt "20" ]; then
 	done
 fi
 delete_conf() {
-	chattr -R -i -a '/data/vendor/thermal/'
+	chattr -R -i -a '/data/vendor/thermal'
 	rm -rf /data/vendor/thermal/config/*
 }
 rm -f "$MODDIR/mode"

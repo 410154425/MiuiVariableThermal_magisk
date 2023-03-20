@@ -96,6 +96,11 @@ for i in $thermal_normal ; do
 	fi
 done
 echo "$thermal_config"
+if [ -f '/data/vendor/thermal' ]; then
+	echo "/data/vendor/thermal目录被屏蔽"
+elif [ -f '/data/vendor/thermal/config' ]; then
+	echo "/data/vendor/thermal/config目录被屏蔽"
+fi
 echo --------- 设备信息 ----------
 echo "release.$(getprop ro.build.version.release | sed -n 's/ //g;$p'),sdk.$(getprop ro.build.version.sdk | sed -n 's/ //g;$p'),brand.$(getprop ro.product.brand | sed -n 's/ //g;$p'),model.$(getprop ro.product.model | sed -n 's/ //g;$p'),cpu.$(cat '/proc/cpuinfo' | egrep 'Hardware' | sed -n 's/.*://g;s/ //g;$p')"
 if [ -f "$MODDIR/disable" -o "$global_switch" = "0" ]; then

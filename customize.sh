@@ -7,7 +7,8 @@ ui_print " -------------------------- "
 sleep 1
 ui_print " -------------------------- "
 sleep 1
-chattr -R -i -a '/data/vendor/thermal/'
-rm -rf '/data/vendor/thermal/'
+chattr -i -a '/data/vendor'
+chattr -R -i -a '/data/vendor/thermal'
+rm -rf '/data/vendor/thermal'
 ui_print " ----- 安装已完成，请重启 ---- "
 ui_print " -------------------------- "

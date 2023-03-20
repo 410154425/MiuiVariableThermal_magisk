@@ -23,10 +23,15 @@ if [ ! -f "$MODDIR/thermal_list" ]; then
 	sed -i 's/\[.*\]/\[ 文件thermal_list丢失，正在创建，稍等 \]/g' "$MODDIR/module.prop"
 	exit 0
 fi
-chattr -R -i -a '/data/vendor/thermal/'
-if [ ! -d '/data/vendor/thermal/config/' ]; then
+chattr -R -i -a '/data/vendor/thermal'
+if [ ! -d '/data/vendor/thermal/config' ]; then
+	rm -f '/data/vendor/thermal/config'
+	if [ ! -d '/data/vendor/thermal' ]; then
+		chattr -i -a '/data/vendor'
+		rm -f '/data/vendor/thermal'
+	fi
 	rm -f "$MODDIR/mode"
-	mkdir -p '/data/vendor/thermal/config/'
+	mkdir -p '/data/vendor/thermal/config'
 	chown -R root:system '/data/vendor/thermal'
 	chcon -R 'u:object_r:thermal_data_file:s0' '/data/vendor/thermal'
 fi
@@ -36,7 +41,7 @@ if [ ! -n "$ls_z_config" ]; then
 	chown -R root:system '/data/vendor/thermal'
 	chcon -R 'u:object_r:thermal_data_file:s0' '/data/vendor/thermal'
 fi
-chmod -R 0771 '/data/vendor/thermal/'
+chmod -R 0771 '/data/vendor/thermal'
 t_blank_md5="$(md5sum "$MODDIR/t_blank" | cut -d ' ' -f '1')"
 md5_blank="de59942d3dffc090f0dae74dfc4d47ce"
 t_bypass_0_md5="$(md5sum "$MODDIR/t_bypass_0" | cut -d ' ' -f '1')"
@@ -69,11 +74,11 @@ fi
 md5_bypass="$md5_bypass_0"
 t_bypass='t_bypass_0'
 delete_conf() {
-	chattr -R -i -a '/data/vendor/thermal/'
+	chattr -R -i -a '/data/vendor/thermal'
 	rm -rf /data/vendor/thermal/config/*
 }
 program_data() {
-	chattr -R -i -a '/data/vendor/thermal/'
+	chattr -R -i -a '/data/vendor/thermal'
 	stat_decrypt_2="$stat_decrypt_1"
 	decrypt_n=3
 	until [ "$stat_decrypt_1" != "$stat_decrypt_2" -o "$decrypt_n" = "0" ] ; do
@@ -96,7 +101,7 @@ pgrep_thermal_program() {
 	else
 		rm -f "$MODDIR/mode"
 		rm -f "$MODDIR/max_c"
-		sed -i 's/\[.*\]/\[ 稍等！若提示超过1分钟，则系统可能不支持MIUI云温控，无法使用 \]/g' "$MODDIR/module.prop"
+		sed -i 's/\[.*\]/\[ 机型或系统不支持，无法使用 \]/g' "$MODDIR/module.prop"
 		exit 0
 	fi
 	thermal_program_id="$(pgrep "$thermal_program")"
@@ -119,9 +124,10 @@ start_thermal_program() {
 			while true ; do
 				rm -f "$MODDIR/mode"
 				rm -f "$MODDIR/max_c"
-				sed -i 's/\[.*\]/\[ 可能系统不支持，无法使用，也可能有冲突，请排查移除冲突后重启再试 \]/g' "$MODDIR/module.prop"
-				chattr -R -i -a '/data/vendor/thermal/'
-				rm -rf '/data/vendor/thermal/'
+				sed -i 's/\[.*\]/\[ 机型或系统可能不支持，无法使用，也可能有冲突，请排查移除冲突后重启再试 \]/g' "$MODDIR/module.prop"
+				chattr -i -a '/data/vendor'
+				chattr -R -i -a '/data/vendor/thermal'
+				rm -rf '/data/vendor/thermal'
 				sleep 1
 			done
 		fi
@@ -757,5 +763,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2023031500
+#version=2023032000
 # ##
