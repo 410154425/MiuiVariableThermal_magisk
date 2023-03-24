@@ -631,15 +631,15 @@ if [ "$screen_on" != 'false' ]; then
 	if [ "$thermal_app" = "1" ]; then
 		app_list="$(echo "$config_conf" | egrep '^app_list=' | sed -n 's/app_list=//g;$p')"
 		if [ -n "$app_list" ]; then
-			dumpsys_window="$(dumpsys window displays | egrep 'mCurrentFocus')"
+			dumpsys_window="$(dumpsys window displays | egrep 'mCurrentFocus' | sed -n '$p')"
 			if [ -n "$dumpsys_window" ]; then
-				activity_window="$(echo "$dumpsys_window" | egrep "$app_list")"	
+				activity_window="$(echo "$dumpsys_window" | egrep "$app_list")"
 			else
-				activity_window="$(dumpsys window | egrep 'mCurrentFocus' | egrep "$app_list")"	
+				activity_window="$(dumpsys window | egrep 'mCurrentFocus' | sed -n '$p' | egrep "$app_list")"
 			fi
 			if [ -f "$MODDIR/mCurrentFocus" ]; then
 				if [ ! -n "$activity_window" ]; then
-					activity_window="$(dumpsys activity | egrep 'mResumedActivity|mTopFullscreen' | egrep "$app_list")"
+					activity_window="$(dumpsys activity | egrep 'mResumedActivity|mTopFullscreen' | sed -n '$p' | egrep "$app_list")"
 				fi
 			fi
 			if [ -n "$activity_window" ]; then
@@ -763,5 +763,5 @@ if [ -f "$MODDIR/thermal/thermal-default.conf" ]; then
 fi
 thermal_conf
 exit 0
-#version=2023032000
+#version=2023032400
 # ##
